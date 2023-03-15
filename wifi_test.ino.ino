@@ -1,3 +1,6 @@
+//go to website: http://capstonea8.wifi.local.cmu.edu/L
+// taken from: https://docs.arduino.cc/tutorials/uno-wifi-rev2/uno-wifi-r2-hosting-a-webserver
+
 #include <WiFiNINA.h>
 
 char ssid[] = "CMU-DEVICE";             //  your network SSID (name) between the " "
@@ -9,6 +12,15 @@ WiFiServer server(80);            //server socket
 WiFiClient client = server.available();
 
 int ledPin = 3;
+
+typedef struct {
+  int gotHit;
+  String action; 
+
+  //FOR THE ACTUAL GAME DATA 
+  //String motorAction;
+  //String lightShowAction;
+} gameData;
 
 void setup() {
   Serial.begin(9600);
@@ -22,10 +34,6 @@ void setup() {
   printWifiStatus();
 
 }
-
-//void handlePOSTRequests(){
-//  
-//}
 
 void loop() {
   client = server.available();
@@ -105,6 +113,44 @@ void connect_WiFi() {
   }
 }
 
+void parse_request_temp(String req){
+  //declarations 
+  char startC = '?';
+  char endC = ' ';
+  char equalC = '='; 
+  
+  //getting indexes 
+  int indexOfStart = req.indexOf(startC);
+  int indexOfEnd = req.indexOf(endC); 
+  int indexOfEq;
+  
+  //getting the key and value string, setting the struct values 
+  String msg = req.substring(indexOfStart, indexOfEnd);
+  indexOfEq = msg.indexOf(equalC); 
+  String key = msg.substring(0, indexOfEq+1);
+  String valueStr = msg.substring(indexOfEq+1); //temp value
+  int value = valueStr.toInt();                 //converting temp string to int
+  gameData gameActions = {value, key}; 
+  Serial.println("PARSED VALUE: " + key + " " + value + "\n" );  
+}
+
+//void parse_request_temp(String req){
+////
+//// //declarations
+//// char delimitC = ",";
+//// req = req.substring(1); //get rid of first character
+//// 
+//// //getting index 
+//// int indexOfC = req.indexOf(delimitC);
+////
+//// //getting the motor and light action strings, setting struct values
+//// String motorActionStr = req.substring(0, indexOfC);
+//// String lightActionStr = req.substring(indexOfC+1);
+//// gameData gameActions = {motorActions, lightActions};
+//// 
+//}
+
+
 void printWEB() {
 
   if (client) {                             // if you get a client,
@@ -113,8 +159,12 @@ void printWEB() {
     while (client.connected()) {            // loop while the client's connected
       if (client.available()) {             // if there's bytes to read from the client,
         char c = client.read();             // read a byte, then
+        //concatonate into a buffer, parse the buffer between ? and \space 
         Serial.write(c);                    // print it out the serial monitor
-        if (c == '\n') {                    // if the byte is a newline character
+        if (c == '\n') {                    // if the byte is a newline character (we've finished seeing a line)
+          parse_request_temp(currentLine);
+          //if the first character of the line starts with ?, parse the request and set the struct fields 
+          //if(currentLine.substring(0,1) == '?') parse_request(currentLine)
 
           // if the current line is blank, you got two newline characters in a row.
           // that's the end of the client HTTP request, so send a response:
@@ -133,9 +183,6 @@ void printWEB() {
             int randomReading = analogRead(A1);
             client.print("Random reading from analog pin: ");
             client.print(randomReading);
-           
-            
-            
 
             // The HTTP response ends with another blank line:
             client.println();
