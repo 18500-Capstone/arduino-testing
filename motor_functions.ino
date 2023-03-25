@@ -22,7 +22,8 @@
 // called this way, it uses the default address 0x40
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 
-
+int NUMWAVES = 3;
+int NUMSYSM = 16;
 
 
 void setup() {
@@ -43,9 +44,10 @@ int arrivingdatabyte;
 
 struct tmpMotor{
   unsigned long on_time;
-  uint8_t motors[16];
-  unsigned long powers[16];
+  int motors[4][16];
+  long powers[4][16];
 };
+
 
 /* Run a batch of motors at some specified powers for some time
  *  IN: motors : an array of motors to run
@@ -56,17 +58,40 @@ struct tmpMotor{
 void run_motors(uint8_t motors[], unsigned long powers[], unsigned long on_time) {
   unsigned long starttime = millis();
   unsigned long endtime = starttime;
+  int MAGICNUM = 10;
+  // PRINT OUT MOTORS
+
+  Serial.print("size of wave ");
+  Serial.print(sizeof(motors));
+  Serial.println("");
+
+
+  
+  Serial.print("\nwave_motors[i]: ");
+    for (int m = 0; m < sizeof(motors); m++) {
+      if (motors[m] != 0) {
+        Serial.print(motors[m]);
+        Serial.print(" ");
+      }
+    }
+    Serial.println("");
+    Serial.print("wave_powers[i]: ");
+    for (int m = 0; m < sizeof(powers); m++) {
+      if (powers[m] != 0) {
+        Serial.print(powers[m]);
+        Serial.print(" ");
+      }
+    }
+    Serial.println("");
+  
   // run motors for specified time
   while ((endtime - starttime) <= on_time) {
     // Run all of the motors at their specified powers
-    for (int i=0; i < sizeof(motors) - 1; i++) {
-      if (motors[i] != -1) {
+    for (int i=0; i < sizeof(motors); i++) {
+//      if (motors[i] != 0) {
         pwm.setPWM(motors[i], 0, powers[i]); // run each motor at their given power
-        Serial.print("motors, powers: ");
-        Serial.print(motors[i]);
-        Serial.print(" ");
-        Serial.println(powers[i]);
-      }
+        //pwm.writeMicroseconds(motors[i], MAGICNUM);
+//      }
     }
     #ifdef ESP8266 
       yield(); // take a breather, required for ESP8266
@@ -75,8 +100,8 @@ void run_motors(uint8_t motors[], unsigned long powers[], unsigned long on_time)
   }
   
   // turn all motors off
-  Serial.println("stopping motors");
-  for (int i=0; i < sizeof(motors) - 1; i++) {
+  // Serial.println("stopping motors");
+  for (int i=0; i < sizeof(motors); i++) {
     if (motors[i] != -1) {
       pwm.setPWM(motors[i], 0, 0);
     }
@@ -89,20 +114,19 @@ void run_response(uint8_t wave_motors[][16], unsigned long wave_powers[][16],
   // loop through and run each wave
   Serial.print("size of wave_motors: ");
   Serial.println(sizeof(wave_motors));
-  for (int i=0; i < sizeof(wave_motors); i++) {
-    Serial.print("about to run wave ");
+  for (int i=0; i < sizeof(wave_motors)+1; i++) {
+    Serial.print("\nabout to run wave ");
     Serial.println(i);
-    Serial.print("wave_motors[i]: ");
-    Serial.println(wave_motors[0][0]);
-    Serial.print("wave_powers[i]: ");
-    Serial.println(wave_powers[0][0]);
+
+    
     run_motors(wave_motors[i], wave_powers[i], on_times[i]);
 
     // delay for next wave
     Serial.print("delaying for ");
     Serial.print(delay_times[i]);
-    Serial.println(" seconds");
+    Serial.println(" milli seconds");
     delay(delay_times[i]);
+  }
 }
 
 void loop() {
@@ -113,13 +137,16 @@ void loop() {
     Serial.println(arrivingdatabyte);
 
 
-
     // DO STUFF WITH INCOMING DATA
     if (arrivingdatabyte == 97) { // 97 == "a"
       // Try to run full response
-      uint8_t wave_motors[][16] = {{1, 4}, {2,4,5}, {3,5}};
-      unsigned long wave_powers[][16] = {{4090,4090}, {4090,4090}, {4090,4090}};
-      unsigned long on_times[] = {500, 500, 500};
+      uint8_t wave_motors[][16] = {{1,4,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
+                                   {2,4,5,7, 8,0,0,0, 0,0,0,0, 0,0,0,0}, 
+                                   {3,5,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}};
+      unsigned long wave_powers[][16] = {{4090,4090,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
+                                         {4090,4090,4090, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
+                                         {4090,4090,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}};
+      unsigned long on_times[] = {5000, 5000, 5000};
       unsigned long delay_times[] = {20, 20, 20};
       
       run_response(wave_motors, wave_powers, on_times, delay_times);
