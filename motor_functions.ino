@@ -62,7 +62,7 @@ void run_motors(uint8_t motors[], unsigned long powers[], unsigned long on_time)
   // PRINT OUT MOTORS
 
   Serial.print("size of wave ");
-  Serial.print(NUMSYSM);
+  Serial.print(sizeof(motors));
   Serial.println("");
 
 
@@ -88,10 +88,10 @@ void run_motors(uint8_t motors[], unsigned long powers[], unsigned long on_time)
   while ((endtime - starttime) <= on_time) {
     // Run all of the motors at their specified powers
     for (int i=0; i < NUMSYSM; i++) {
-      if (motors[i] != 0) {
+//      if (motors[i] != 0) {
         pwm.setPWM(motors[i], 0, powers[i]); // run each motor at their given power
-        pwm.writeMicroseconds(motors[i], MAGICNUM);
-      }
+        //pwm.writeMicroseconds(motors[i], MAGICNUM);
+//      }
     }
     #ifdef ESP8266 
       yield(); // take a breather, required for ESP8266
@@ -101,8 +101,10 @@ void run_motors(uint8_t motors[], unsigned long powers[], unsigned long on_time)
   
   // turn all motors off
   // Serial.println("stopping motors");
-  for (int i=0; i < NUMSYSM; i++) {
-    pwm.setPWM(motors[i], 0, 0);
+  for (int i=0; i < sizeof(motors); i++) {
+    if (motors[i] != -1) {
+      pwm.setPWM(motors[i], 0, 0);
+    }
   }
 }
 
@@ -139,7 +141,7 @@ void loop() {
     if (arrivingdatabyte == 97) { // 97 == "a"
       // Try to run full response
       uint8_t wave_motors[][16] = {{1,4,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
-                                   {2,4,5,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
+                                   {2,4,3,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
                                    {3,5,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}};
       unsigned long wave_powers[][16] = {{4090,4090,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
                                          {4090,4090,4090, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
