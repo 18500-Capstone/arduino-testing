@@ -13,14 +13,94 @@ WiFiClient client = server.available();
 
 int ledPin = 3;
 
+//Holds the current actions and (eventually) health level amount 
 typedef struct {
-  int gotHit;
-  String action; 
 
   //FOR THE ACTUAL GAME DATA 
-  //String motorAction;
-  //String lightShowAction;
+  String motorAction; //one of 6 values: {FJ, HS, HL, LH, -}
+  String lightShowAction; //same 6 values: {FJ, HS, HL, LH, -} 
+  //int healthLevel;  //holds number in range 0-25
 } gameData;
+
+gameData gameActions; //declaring instance of struct
+
+//parses JSON request and sets the struct values accordingly 
+void parse_request(String req, gameData *ga){
+
+ //declarations
+ //char delimitC = ",";
+ String motorActionStr, lightActionStr = "";
+ req = req.substring(1); //get rid of first character
+ 
+ //getting index 
+ //int indexOfComma = req.indexOf(delimitC);
+
+ //setting motorAction and light substring
+  motorActionStr = req; //1 hot vector "0010" FJ, HS, HL, LH
+ 
+ //forceful jump state 1000
+ if(motorActionStr.substring(0,1) == "1"){ //index corresponds to FJ
+    motorActionStr = "FJ";
+    ga->motorAction = motorActionStr;
+    ga->lightShowAction = motorActionStr;
+    return; 
+ }
+ 
+ ////Hit by a small enemy state 0100
+ motorActionStr = motorActionStr.substring(1);
+ if(motorActionStr.substring(0,1) == "1"){
+    motorActionStr = "HS"; 
+    ga->motorAction = motorActionStr;
+    ga->lightShowAction = motorActionStr;
+    return; 
+ }
+ 
+ //Hit by a large enemy state 0010
+ motorActionStr = motorActionStr.substring(1);
+ if(motorActionStr.substring(0,1) == "1"){
+    motorActionStr = "HL";
+    ga->motorAction = motorActionStr;
+    ga->lightShowAction = motorActionStr;
+    return; 
+ }
+ //low health state 0001
+ motorActionStr = motorActionStr.substring(1);
+ if(motorActionStr.substring(0,1) == "1"){
+    motorActionStr = "LH";
+    ga->motorAction = motorActionStr;
+    ga->lightShowAction = motorActionStr;
+    return; 
+ }
+ //default state (0000) where no relevant action is occuring
+ if(motorActionStr.substring(0,1) == "0"){
+    motorActionStr = "-";
+    ga->motorAction = motorActionStr;
+    ga->lightShowAction = motorActionStr;
+    return; 
+ } 
+}
+
+//void parse_request_temp(String req){
+//  //declarations 
+//  char startC = '?';
+//  char endC = ' ';
+//  char equalC = '='; 
+//  
+//  //getting indexes 
+//  int indexOfStart = req.indexOf(startC);
+//  int indexOfEnd = req.indexOf(endC); 
+//  int indexOfEq;
+//  
+//  //getting the key and value string, setting the struct values 
+//  String msg = req.substring(indexOfStart, indexOfEnd);
+//  indexOfEq = msg.indexOf(equalC); 
+//  String key = msg.substring(0, indexOfEq+1);
+//  String valueStr = msg.substring(indexOfEq+1); //temp value
+//  int value = valueStr.toInt();                 //converting temp string to int
+//  gameData gameActions = {value, key}; 
+//  Serial.println("PARSED VALUE: " + key + " " + value + "\n" );  
+//}
+
 
 void setup() {
   Serial.begin(9600);
@@ -32,15 +112,11 @@ void setup() {
 
   server.begin();
   printWifiStatus();
-
 }
 
 void loop() {
   client = server.available();
-//    digitalWrite(ledPin, HIGH);
-//    delay(1000);
-//    digitalWrite(ledPin, LOW);
-//    delay(1000);
+
   if (client) {
     printWEB();
   }
@@ -113,44 +189,6 @@ void connect_WiFi() {
   }
 }
 
-void parse_request_temp(String req){
-  //declarations 
-  char startC = '?';
-  char endC = ' ';
-  char equalC = '='; 
-  
-  //getting indexes 
-  int indexOfStart = req.indexOf(startC);
-  int indexOfEnd = req.indexOf(endC); 
-  int indexOfEq;
-  
-  //getting the key and value string, setting the struct values 
-  String msg = req.substring(indexOfStart, indexOfEnd);
-  indexOfEq = msg.indexOf(equalC); 
-  String key = msg.substring(0, indexOfEq+1);
-  String valueStr = msg.substring(indexOfEq+1); //temp value
-  int value = valueStr.toInt();                 //converting temp string to int
-  gameData gameActions = {value, key}; 
-  Serial.println("PARSED VALUE: " + key + " " + value + "\n" );  
-}
-
-//void parse_request_temp(String req){
-////
-//// //declarations
-//// char delimitC = ",";
-//// req = req.substring(1); //get rid of first character
-//// 
-//// //getting index 
-//// int indexOfC = req.indexOf(delimitC);
-////
-//// //getting the motor and light action strings, setting struct values
-//// String motorActionStr = req.substring(0, indexOfC);
-//// String lightActionStr = req.substring(indexOfC+1);
-//// gameData gameActions = {motorActions, lightActions};
-//// 
-//}
-
-
 void printWEB() {
 
   if (client) {                             // if you get a client,
@@ -162,9 +200,9 @@ void printWEB() {
         //concatonate into a buffer, parse the buffer between ? and \space 
         Serial.write(c);                    // print it out the serial monitor
         if (c == '\n') {                    // if the byte is a newline character (we've finished seeing a line)
-          parse_request_temp(currentLine);
+          //parse_request_temp(currentLine);
           //if the first character of the line starts with ?, parse the request and set the struct fields 
-          //if(currentLine.substring(0,1) == '?') parse_request(currentLine)
+          if(currentLine.substring(0,1) == '?') parse_request(currentLine);
 
           // if the current line is blank, you got two newline characters in a row.
           // that's the end of the client HTTP request, so send a response:
@@ -203,7 +241,6 @@ void printWEB() {
         if (currentLine.endsWith("GET /L")) {
         digitalWrite(ledPin, LOW);       
         }
-
       }
     }
     // close the connection:
