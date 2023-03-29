@@ -202,7 +202,7 @@ void printWEB() {
         if (c == '\n') {                    // if the byte is a newline character (we've finished seeing a line)
           //parse_request_temp(currentLine);
           //if the first character of the line starts with ?, parse the request and set the struct fields 
-          if(currentLine.substring(0,1) == '?') parse_request(currentLine);
+          if(currentLine.substring(0,1) == '?') parse_request(currentLine, &gameActions);
 
           // if the current line is blank, you got two newline characters in a row.
           // that's the end of the client HTTP request, so send a response:
