@@ -22,22 +22,34 @@ const int WIDTH = 10;  //number of cols in the entire light system
 //RGB channel setting colors
 uint32_t offColor = 0x000000;
 uint32_t blueColor = 0x0000FF;
-uint32_t redColor = 0xFF0000;
-uint32_t greenColor = 0x00FF00;
-uint32_t orangeColor = 0xd47c1e;
-
-uint32_t yellowColor = 0xd4b01e;
-uint32_t yellowGreenColor = 0x82d41e;
-uint32_t greenAquaColor = 0x2dc485;
-uint32_t aquaColor = 0x2da1c4;
-uint32_t violetColor = 0x302dc4;
-uint32_t purpleColor = 0xa453d4;
-uint32_t pinkColor = 0xd453c3;
-uint32_t pinkRedColor = 0xd4537e;
+//uint32_t redColor = 0xFF0000;
+//uint32_t greenColor = 0x00FF00;
+//uint32_t orangeColor = 0xd47c1e;
+//
+//uint32_t yellowColor = 0xd4b01e;
+//uint32_t yellowGreenColor = 0x82d41e;
+//uint32_t greenAquaColor = 0x2dc485;
+//uint32_t aquaColor = 0x2da1c4;
+//uint32_t violetColor = 0x302dc4;
+//uint32_t purpleColor = 0xa453d4;
+//uint32_t pinkColor = 0xd453c3;
+//uint32_t pinkRedColor = 0xd4537e;
 
 //GRB channel setting colors
-//uint32_t redColor = 0x00FF00;      // 'On' color (starts red)
-//uint32_t greenColor = 0xFF0000;      // 'On' color (starts red)
+uint32_t redColor = 0x00FF00;      // 'On' color (starts red)
+uint32_t greenColor = 0xFF0000;      // 'On' color (starts red)
+uint32_t orangeColor = 0x7cd41e;
+
+uint32_t yellowColor = 0xb0d41e;
+uint32_t yellowGreenColor = 0xd4821e;
+uint32_t greenAquaColor = 0xc42d85;
+uint32_t aquaColor = 0xa12dc4;
+uint32_t violetColor = 0x2d30c4;
+uint32_t purpleColor = 0x53a4d4;
+uint32_t pinkColor = 0x53d4c3;
+uint32_t pinkRedColor = 0x53d47e;
+
+
 
 int row0Indices[] = {0, 11, 12, 23, 24, 35, 36, 47, 48, 59}; //bottom row indexes
 int row1Indices[] = {1, 10, 13, 22, 25, 34, 37, 46, 49, 58};
@@ -55,7 +67,7 @@ int rowIndices[HEIGHT][WIDTH] = {{0, 11, 12, 23, 24, 35, 36, 47, 48, 59},
 
 
 
-Adafruit_DotStar strip(NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_RGB); //might need to change to BRG or remove 4th parameter
+Adafruit_DotStar strip(NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_BRG); //might need to change to BRG or remove 4th parameter
 // The last parameter is optional -- this is the color data order of the
 // DotStar strip, which has changed over time in different production runs.
 // Your code just uses R,G,B colors, the library then reassigns as needed.
@@ -78,19 +90,8 @@ void setup() {
 
 //set a row of LEDs to 'color' and turn them on once done
 void setRow(uint32_t color, int row) {
-//  int rowIndx[WIDTH];
-  //set the correct array to index into
-//  if (row == 0)  memcpy(rowIndx, row0Indices, sizeof(row0Indices));  //memcpy size field is in bytes
-//  else if (row == 1) memcpy(rowIndx, row1Indices, sizeof(row1Indices));
-//  else if (row == 2) memcpy(rowIndx, row2Indices, sizeof(row2Indices));
-//  else if (row == 3)  memcpy(rowIndx, row3Indices, sizeof(row3Indices));
-//  else if (row == 4)  memcpy(rowIndx, row4Indices, sizeof(row4Indices));
-//  else  memcpy(rowIndx, row5Indices, sizeof(row5Indices));
-
   //set the LED's rgb channel to color. Avoids doing memcpy 5 different times 
   for (int i = 0; i < WIDTH; i++) {
-    Serial.println("rowww: " + String(row));
-    Serial.println("CORRECT VALUE" + String(rowIndices[row][i] == row0Indices[i]));
     strip.setPixelColor(rowIndices[row][i], color);
   }
   strip.show();
@@ -111,8 +112,8 @@ void cascadeUp(uint32_t colors[], int delayS) {
   
   //set each row of lights, w a delay of delayS in between 
   for(int i = 0; i < HEIGHT; i++){
-    Serial.println(String(i));
-    Serial.println(String(colors[i], HEX));
+//    Serial.println(String(i));
+//    Serial.println(String(colors[i], HEX));
     setRow(colors[i], i); //'strip.show()' is inside this function
     delay(delayS);
   }
@@ -136,6 +137,7 @@ void cascade(uint32_t colors[], int delayT, int delayS) {
   cascadeDown(delayS);
 }
 
+//basic low health pattern, flashes red
 void basic_LH() {
   strip.fill(redColor, 0, NUMPIXELS);
   strip.show();
@@ -145,6 +147,7 @@ void basic_LH() {
   delay(150);
 }
 
+//medium low health patter, frequenct odf red flashes increase as healthlevel gets smaller
 void medium_LH(int healthLevel) {
   //say low health is at a range 0-25
   strip.fill(redColor, 0, NUMPIXELS);
@@ -157,9 +160,9 @@ void medium_LH(int healthLevel) {
 
 void loop() {
   //color at index0 will appear in row0, index1 will appear in row1, ... and so forth 
-  //uint32_t colorArray[] = {pinkColor, violetColor, aquaColor, yellowGreenColor, orangeColor, redColor};  
-  //cascade(colorArray, 200, 150);
-  strip.fill(blueColor, 0, 30);
+  uint32_t colorArray[] = {pinkColor, violetColor, aquaColor, yellowGreenColor, orangeColor, redColor};  
+  cascade(colorArray, 200, 150);
+  //strip.fill(greenColor, 0, 60);
   strip.show(); 
   //Serial.println("here");
   //test2DArray(); 
