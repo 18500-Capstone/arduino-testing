@@ -1,6 +1,6 @@
 //File description: Controls light actions for forceful jump (in the form of a cascade light function), and low health. 
 //Missing functions: hit small, hit large functions
-//Drawn current information: requires about 200 mA for all the 'on' pixels + 1 mA per 'off' pixel.
+//Drawn current information: requires about 20 mA for 1 'on' pixels + 1 mA per 'off' pixel.
 
 //Author: Amelia Lopez 
 
@@ -39,12 +39,20 @@ uint32_t pinkRedColor = 0xd4537e;
 //uint32_t redColor = 0x00FF00;      // 'On' color (starts red)
 //uint32_t greenColor = 0xFF0000;      // 'On' color (starts red)
 
-const int row0Indices[] = {0, 11, 12, 23, 24, 35, 36, 47, 48, 59}; //bottom row indexes
-const int row1Indices[] = {1, 10, 13, 22, 25, 34, 37, 46, 49, 58};
-const int row2Indices[] = {2, 9, 14, 21, 26, 33, 38, 45, 50, 57};
-const int row3Indices[] =  {3, 8, 15, 20, 27, 32, 39, 44, 51, 56};
-const int row4Indices[] = {4, 7, 16, 19, 28, 31, 40, 43, 52, 55};
-const int row5Indices[] = {5, 6, 17, 18, 29, 30, 41, 42, 53, 54}; //top row indexes
+int row0Indices[] = {0, 11, 12, 23, 24, 35, 36, 47, 48, 59}; //bottom row indexes
+int row1Indices[] = {1, 10, 13, 22, 25, 34, 37, 46, 49, 58};
+int row2Indices[] = {2, 9, 14, 21, 26, 33, 38, 45, 50, 57};
+int row3Indices[] =  {3, 8, 15, 20, 27, 32, 39, 44, 51, 56};
+int row4Indices[] = {4, 7, 16, 19, 28, 31, 40, 43, 52, 55};
+int row5Indices[] = {5, 6, 17, 18, 29, 30, 41, 42, 53, 54}; //top row indexes
+//int rowIndices[HEIGHT][WIDTH] = {{row0Indices}, {row1Indices}, {row2Indices}, {row3Indices}, {row4Indices}, {row5Indices}};
+int rowIndices[HEIGHT][WIDTH] = {{0, 11, 12, 23, 24, 35, 36, 47, 48, 59}, 
+{1, 10, 13, 22, 25, 34, 37, 46, 49, 58}, 
+{2, 9, 14, 21, 26, 33, 38, 45, 50, 57}, 
+{3, 8, 15, 20, 27, 32, 39, 44, 51, 56}, 
+{4, 7, 16, 19, 28, 31, 40, 43, 52, 55}, 
+{5, 6, 17, 18, 29, 30, 41, 42, 53, 54}};
+
 
 
 Adafruit_DotStar strip(NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_RGB); //might need to change to BRG or remove 4th parameter
@@ -70,35 +78,29 @@ void setup() {
 
 //set a row of LEDs to 'color' and turn them on once done
 void setRow(uint32_t color, int row) {
-  int rowIndx[WIDTH];
+//  int rowIndx[WIDTH];
   //set the correct array to index into
-  if (row == 0)  memcpy(rowIndx, row0Indices, sizeof(row0Indices));  //memcpy size field is in bytes
-  else if (row == 1) memcpy(rowIndx, row1Indices, sizeof(row1Indices));
-  else if (row == 2) memcpy(rowIndx, row2Indices, sizeof(row2Indices));
-  else if (row == 3)  memcpy(rowIndx, row3Indices, sizeof(row3Indices));
-  else if (row == 4)  memcpy(rowIndx, row4Indices, sizeof(row4Indices));
-  else  memcpy(rowIndx, row5Indices, sizeof(row5Indices));
-  //Serial.println("rowwww: " + String(row));
+//  if (row == 0)  memcpy(rowIndx, row0Indices, sizeof(row0Indices));  //memcpy size field is in bytes
+//  else if (row == 1) memcpy(rowIndx, row1Indices, sizeof(row1Indices));
+//  else if (row == 2) memcpy(rowIndx, row2Indices, sizeof(row2Indices));
+//  else if (row == 3)  memcpy(rowIndx, row3Indices, sizeof(row3Indices));
+//  else if (row == 4)  memcpy(rowIndx, row4Indices, sizeof(row4Indices));
+//  else  memcpy(rowIndx, row5Indices, sizeof(row5Indices));
 
-//  //test that rowIndx is the correct array (i.e. working correctly)
-//  for (int i = 0; i < WIDTH; i++) {
-//    //Serial.println("here" + String(row));
-//    if (row == 0) { 
-//      Serial.print(rowIndx[i] == row0Indices[i]);
-//    }
-//    else if (row == 1) Serial.print(rowIndx[i] == row1Indices[i]);
-//    else if (row == 2) Serial.print(rowIndx[i] == row2Indices[i]);
-//    else if (row == 3) Serial.print(rowIndx[i] == row3Indices[i]);
-//    else if (row == 4) Serial.print(rowIndx[i] == row4Indices[i]);
-//    else Serial.print(rowIndx[i] == row5Indices[i]);
-//  }
-//  Serial.println();
-
-  //set the row to the pixel color
+  //set the LED's rgb channel to color. Avoids doing memcpy 5 different times 
   for (int i = 0; i < WIDTH; i++) {
-    strip.setPixelColor(rowIndx[i], color);
+    Serial.println("rowww: " + String(row));
+    Serial.println("CORRECT VALUE" + String(rowIndices[row][i] == row0Indices[i]));
+    strip.setPixelColor(rowIndices[row][i], color);
   }
   strip.show();
+  
+
+//  //set the row to the pixel color
+//  for (int i = 0; i < WIDTH; i++) {
+//    strip.setPixelColor(rowIndx[i], color);
+//  }
+//  strip.show();
 }
 
 //gradally turn rows of lights on (starting at the bottom)
@@ -155,8 +157,11 @@ void medium_LH(int healthLevel) {
 
 void loop() {
   //color at index0 will appear in row0, index1 will appear in row1, ... and so forth 
-  uint32_t colorArray[] = {pinkColor, violetColor, aquaColor, yellowGreenColor, orangeColor, redColor};  
-  cascade(colorArray, 200, 150);
-  //  strip.fill(blueColor, 0, 30);
+  //uint32_t colorArray[] = {pinkColor, violetColor, aquaColor, yellowGreenColor, orangeColor, redColor};  
+  //cascade(colorArray, 200, 150);
+  strip.fill(blueColor, 0, 30);
+  strip.show(); 
+  //Serial.println("here");
+  //test2DArray(); 
 
 }
