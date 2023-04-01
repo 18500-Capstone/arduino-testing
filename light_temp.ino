@@ -13,8 +13,8 @@
 #define NUMPIXELS 60 // Number of LEDs in strip
 
 // Here's how to control the LEDs from any two pins:
-#define DATAPIN    4  //DI
-#define CLOCKPIN   5  //CI
+#define DATAPIN    4  //DI (blue)
+#define CLOCKPIN   5  //CI (green)
 
 const int HEIGHT = 6;  //number of rows in the entire light system
 const int WIDTH = 10;  //number of cols in the entire light system
@@ -24,7 +24,8 @@ uint32_t offColor = 0x000000;
 uint32_t blueColor = 0x0000FF;
 //uint32_t redColor = 0xFF0000;
 //uint32_t greenColor = 0x00FF00;
-//uint32_t orangeColor = 0xd47c1e;
+//uint32_t orangeColor = 0xeb8634;
+
 //
 //uint32_t yellowColor = 0xd4b01e;
 //uint32_t yellowGreenColor = 0x82d41e;
@@ -38,7 +39,7 @@ uint32_t blueColor = 0x0000FF;
 //GRB channel setting colors
 uint32_t redColor = 0x00FF00;      // 'On' color (starts red)
 uint32_t greenColor = 0xFF0000;      // 'On' color (starts red)
-uint32_t orangeColor = 0x7cd41e;
+uint32_t orangeColor = 0x34eb34;
 
 uint32_t yellowColor = 0xb0d41e;
 uint32_t yellowGreenColor = 0xd4821e;
@@ -161,7 +162,7 @@ void medium_LH(int healthLevel) {
 void loop() {
   //color at index0 will appear in row0, index1 will appear in row1, ... and so forth 
   uint32_t colorArray[] = {pinkColor, violetColor, aquaColor, yellowGreenColor, orangeColor, redColor};  
-  cascade(colorArray, 200, 150);
+  cascade(colorArray, 100, 75);
   //strip.fill(greenColor, 0, 60);
   strip.show(); 
   //Serial.println("here");
