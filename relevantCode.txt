@@ -1,0 +1,18 @@
+// Hopefully I will change later. Hardcoded stuff that will go into a class
+void run_response1() {
+  // Try to run full response
+  uint8_t wave_motors[][16] = {{7,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},         // Wave 1
+                               {4,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},         // Wave 2
+                               {1,2,13,14, 0,0,0,0, 0,0,0,0, 0,0,0,0},       // Wave 3
+                               {4,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},         // Wave 4
+                               {7,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}};        // Wave 5
+  unsigned long wave_powers[][16] = {{127,127,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},          // Wave 1
+                                     {127,127,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},          // Wave 2
+                                     {127,127,127,127, 0,0,0,0, 0,0,0,0, 0,0,0,0},      // Wave 3
+                                     {127,127,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},          // Wave 4
+                                     {127,127,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}};         // Wave 5
+  unsigned long on_times[] = {500,500,750,500,500};       
+  unsigned long delay_times[] = {20, 20, 20, 20, 20};
+  
+  run_response(wave_motors, wave_powers, on_times, delay_times);
+}
