@@ -45,6 +45,9 @@ uint32_t yellowColor = 0xb0d41e;
 uint32_t yellowGreenColor = 0xd4821e;
 uint32_t greenAquaColor = 0xc42d85;
 uint32_t aquaColor = 0xa12dc4;
+uint32_t lightAquaColor = 0xed80e2;
+
+uint32_t lightGreenColor = 0xe34340;
 uint32_t violetColor = 0x2d30c4;
 uint32_t purpleColor = 0x53a4d4;
 uint32_t pinkColor = 0x53d4c3;
@@ -96,13 +99,6 @@ void setRow(uint32_t color, int row) {
     strip.setPixelColor(rowIndices[row][i], color);
   }
   strip.show();
-  
-
-//  //set the row to the pixel color
-//  for (int i = 0; i < WIDTH; i++) {
-//    strip.setPixelColor(rowIndx[i], color);
-//  }
-//  strip.show();
 }
 
 //gradally turn rows of lights on (starting at the bottom)
@@ -113,8 +109,6 @@ void cascadeUp(uint32_t colors[], int delayS) {
   
   //set each row of lights, w a delay of delayS in between 
   for(int i = 0; i < HEIGHT; i++){
-//    Serial.println(String(i));
-//    Serial.println(String(colors[i], HEX));
     setRow(colors[i], i); //'strip.show()' is inside this function
     delay(delayS);
   }
@@ -159,13 +153,40 @@ void medium_LH(int healthLevel) {
   delay(healthLevel);
 }
 
+void gotHit(){
+   strip.fill(redColor, 0, NUMPIXELS);
+   strip.show(); 
+   delay(100);
+   strip.fill(offColor, 0, NUMPIXELS);
+   strip.show(); 
+   delay(25);
+   trip.fill(redColor, 0, NUMPIXELS);
+   strip.show();   
+}
+
+void gotAKill(){
+  strip.fill(greenColor, 0, NUMPIXELS);
+   strip.show(); 
+   delay(100);
+   strip.fill(offColor, 0, NUMPIXELS);
+   strip.show(); 
+   delay(25);
+   trip.fill(greenColor, 0, NUMPIXELS);
+   strip.show();   
+}
+
+
 void loop() {
   //color at index0 will appear in row0, index1 will appear in row1, ... and so forth 
   uint32_t colorArray[] = {pinkColor, violetColor, aquaColor, yellowGreenColor, orangeColor, redColor};  
+  //uint32_t colorArray[] = {lightAquaColor, lightAquaColor, greenAquaColor, greenAquaColor, aquaColor, aquaColor};  
+  //uint32_t colorArray[] = {lightGreenColor, lightGreenColor, greenAquaColor, greenAquaColor, greenColor, greenColor};  
   cascade(colorArray, 100, 75);
-  //strip.fill(greenColor, 0, 60);
   strip.show(); 
-  //Serial.println("here");
-  //test2DArray(); 
-
+  gotHit();
+  strip.show();
+  delay(200);
+  gotAKill();
+  strip.show(); 
+  delay(200);
 }
