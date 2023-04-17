@@ -89,55 +89,71 @@ void setup() {
   //Serial.println(gameActions.action);
 
   //TEST PARSED MESSAGE
-  Serial.println("parsed request, sending FJ with health 87, intensity 40");
-  parse_request("?1000,87,40\n", &gameActions);
-  Serial.println(gameActions.action);
-  Serial.println(gameActions.healthLevel);
-  Serial.println(gameActions.desiredMotorIntensity);
-
-  Serial.println("parsed request, sending FJ with health NaN, intensity 25 (should see health==100)");
-  parse_request("?1000,NaN,25\n", &gameActions); 
-  Serial.println(gameActions.action);
-  Serial.println(gameActions.healthLevel);
-  Serial.println(gameActions.desiredMotorIntensity);
-  
-  Serial.println("parsed request, sending LH with health 32, intensity 100");
-  parse_request("?0001,32,100\n", &gameActions); 
-  Serial.println(gameActions.action);
-  Serial.println(gameActions.healthLevel);
-  Serial.println(gameActions.desiredMotorIntensity);
-  
-  Serial.println("parsed request, sending nothing with health 20, intensity 0");
-  parse_request("?0000,20,0\n", &gameActions);
-  Serial.println(gameActions.action);
-  Serial.println(gameActions.healthLevel);
-  Serial.println(gameActions.desiredMotorIntensity);
-  
-  Serial.println("parsed request, sending HS with health 55, intensity 20");
-  parse_request("?0100,55,20\n", &gameActions);
-  Serial.println(gameActions.action);
-  Serial.println(gameActions.healthLevel);
-  Serial.println(gameActions.desiredMotorIntensity);
-
-  Serial.println("parsed request, sending HL with health 99, intensity 78");
-  parse_request("?0010,99,78\n", &gameActions);
-  Serial.println(gameActions.action);
-  Serial.println(gameActions.healthLevel);
-  Serial.println(gameActions.desiredMotorIntensity);
-  
-  Serial.println("parsed request, sending FJ with health 12, intensity 66");
-  parse_request("?1000,12,66\n", &gameActions);
-  Serial.println(gameActions.action);
-  Serial.println(gameActions.healthLevel);
-  Serial.println(gameActions.desiredMotorIntensity);
-  
+//  Serial.println("parsed request, sending FJ with health 87, intensity 40");
+//  parse_request("?1000,87,40\n", &gameActions);
+//  Serial.println(gameActions.action);
+//  Serial.println(gameActions.healthLevel);
+//  Serial.println(gameActions.desiredMotorIntensity);
+//
+//  Serial.println("parsed request, sending FJ with health NaN, intensity 25 (should see health==100)");
+//  parse_request("?1000,NaN,25\n", &gameActions); 
+//  Serial.println(gameActions.action);
+//  Serial.println(gameActions.healthLevel);
+//  Serial.println(gameActions.desiredMotorIntensity);
+//  
+//  Serial.println("parsed request, sending LH with health 32, intensity 100");
+//  parse_request("?0001,32,100\n", &gameActions); 
+//  Serial.println(gameActions.action);
+//  Serial.println(gameActions.healthLevel);
+//  Serial.println(gameActions.desiredMotorIntensity);
+//  
+//  Serial.println("parsed request, sending nothing with health 20, intensity 0");
+//  parse_request("?0000,20,0\n", &gameActions);
+//  Serial.println(gameActions.action);
+//  Serial.println(gameActions.healthLevel);
+//  Serial.println(gameActions.desiredMotorIntensity);
+//  
+//  Serial.println("parsed request, sending HS with health 55, intensity 20");
+//  parse_request("?0100,55,20\n", &gameActions);
+//  Serial.println(gameActions.action);
+//  Serial.println(gameActions.healthLevel);
+//  Serial.println(gameActions.desiredMotorIntensity);
+//
+//  Serial.println("parsed request, sending HL with health 99, intensity 78");
+//  parse_request("?0010,99,78\n", &gameActions);
+//  Serial.println(gameActions.action);
+//  Serial.println(gameActions.healthLevel);
+//  Serial.println(gameActions.desiredMotorIntensity);
+//  
+//  Serial.println("parsed request, sending FJ with health 12, intensity 66");
+//  parse_request("?1000,12,66\n", &gameActions);
+//  Serial.println(gameActions.action);
+//  Serial.println(gameActions.healthLevel);
+//  Serial.println(gameActions.desiredMotorIntensity);
+//  
 }
 
-void loop() {
-  while (Serial.available() == 0) {}     //wait for data available
-  String currentLine = Serial.readString();  //read until timeout
-  if(currentLine.substring(currentLine.length()-1) == 'c'){
-    parse_request(currentLine, &gameActions);
-  }
+//void loop() {
+//  while (Serial.available() == 0) {}     //wait for data available
+//  Serial.println("SERIAL AVAILABLE");
+//  String currentLine = Serial.readString();  //read until timeout
+//  
+//  if(currentLine.charAt(currentLine.length()-1) == '\n'){
+//    parse_request(currentLine, &gameActions);
+//    Serial.println("PARSED!");
+//    Serial.println(gameActions.action);
+//    Serial.println(gameActions.healthLevel);
+//    Serial.println(gameActions.desiredMotorIntensity);
+//  }
+//
+//}
 
+void loop() {
+  // put your main code here, to run repeatedly:
+  if (Serial.available() > 0) {
+    int red = Serial.parseInt();
+    int green = Serial.parseInt();
+    int blue = Serial.parseInt();
+    //Serial.println(red.toInt() + " "  + green.toInt() + " " + blue.toInt());
+  }
 }
