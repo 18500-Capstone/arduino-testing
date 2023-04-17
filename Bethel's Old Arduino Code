@@ -1,0 +1,54 @@
+int motorPin = 3;
+
+void setup() {
+  // put your setup code here, to run once:
+  pinMode(motorPin, OUTPUT);
+  Serial.begin(9600);
+
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  if(Serial.available() > 0) {
+
+    String receivedString = "";
+
+    while(Serial.available() > 0)
+    {
+      receivedString += char(Serial.read());
+      //(Serial.readString()).substring(0, 5);
+      //c =  char(Serial.read())
+      //Serial.println(receivedString);
+
+    }
+
+    //if (c == '\n'){
+      if (receivedString == "F") 
+      {
+        analogWrite(motorPin, 255);
+      }
+      if (receivedString == "A") 
+      {
+        analogWrite(motorPin, 255);
+      }
+        
+      if (receivedString == "B") 
+      {
+        analogWrite(motorPin, 255);
+      }
+
+      if (receivedString == "L") 
+      {
+        analogWrite(motorPin, 255);
+      }
+        
+      else
+      {
+        analogWrite(motorPin, 0);
+      }
+   // }
+
+  }
+  
+
+}
