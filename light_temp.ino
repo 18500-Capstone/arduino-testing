@@ -1,8 +1,10 @@
-//File description: Controls light actions for forceful jump (in the form of a cascade light function), and low health. 
-//Missing functions: hit small, hit large functions
-//Drawn current information: requires about 20 mA for 1 'on' pixels + 1 mA per 'off' pixel.
+/* File description: Controls light actions for forceful jump 
+ *(in the form of a cascade light function), low health, hit small, and hit large functions
+ * Drawn current information: requires about 20 mA for 1 'on' pixels + 1 mA per 'off' pixel. 
+ * //for next iter: call helper function to replace all the millis() checks  
+*/
 
-//Author: Amelia Lopez 
+/*Author: Amelia Lopez */ 
 
 #include <Adafruit_DotStar.h>
 #include <string.h>
@@ -88,6 +90,7 @@ long delayLowHealthBasic = 100;  //ms
 bool ledState1 = LOW; //got a hit
 bool ledState2 = LOW; //got a kill 
 bool ledState3 = LOW; //low health
+bool ledState4 = LOW; //low health temp for basic
 
 
 Adafruit_DotStar strip(NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_BRG); 
@@ -105,6 +108,16 @@ void setup() {
   strip.show();  // Turn all LEDs off ASAP
   Serial.begin(9600);
 }
+
+//// helper-function for easy to use non-blocking timing
+//boolean TimePeriodIsOver (unsigned long &StartTime, unsigned long TimePeriod) {
+//  unsigned long currentMillis  = millis();  
+//  if ( currentMillis - StartTime >= TimePeriod ){
+//    StartTime = currentMillis; // store timestamp when the new interval has started
+//    return true;               // more time than TimePeriod) has elapsed since last time if-condition was true
+//  } 
+//  else return false; // return value false because LESS time than TimePeriod has passed by
+//}
 
 //set a row of LEDs to 'color' and turn them on once done
 void setRow(uint32_t color, int row) {
