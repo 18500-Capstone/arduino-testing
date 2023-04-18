@@ -121,74 +121,81 @@ const int hitSmall = 1;
 const int hitLarge = 2;
 const int lowHealth = 3; 
 
-//Holds the current actions and (eventually) health level amount 
+//Holds the current action, health level amount, and desired motor intensity 
 typedef struct {
-
-  //FOR THE ACTUAL GAME DATA 
-  int action; //one of 5 values: {FJ, HS, HL, LH, -}->{0, 1, 2, 3, 4}
-  int healthLevel;  //holds number in range 0-25
+  int action; //one of 5 int values: {FJ, HS, HL, LH, -}->{0, 1, 2, 3, 4}
+  int desiredMotorIntensity; //holds number in range 0-100
+  int healthLevel;          //holds number in range 0-100
 } gameData;
 
-gameData gameActions; //declaring instance of struct
+gameData gameActions; //declaring instance of struct 
 
 //parses JSON request and sets the struct values accordingly 
 void parse_request(String req, gameData *ga){
 
- String motorActionStr, lightActionStr = "";
- int actionInt;
+ //declarations
+ char delimitC = ',';
+ String motorActionStr, healthNumStr, motorStrengthStr = "";
  req = req.substring(1); //get rid of first character
-
- //setting motorAction and light substring
-  motorActionStr = req; //1 hot vector "0010" FJ, HS, HL, LH
  
+ //getting index 
+ int indexOf1stComma = req.indexOf(delimitC);
+ int indexOfLastComma = req.lastIndexOf(delimitC); 
+ int indexOfLastChar = req.length(); 
+ 
+ //isolating motorAction, health num, and motor strength substring
+ motorActionStr = req.substring(0,indexOf1stComma); //1 hot vector "0010" FJ, HS, HL, LH
+ healthNumStr = req.substring(indexOf1stComma+1, indexOfLastComma);
+ motorStrengthStr = req.substring(indexOfLastComma+1);
+  
+ //converting healthNumStr and motorStrengthStr to int and setting the struct values 
+ if(healthNumStr == "NaN"){
+  ga->healthLevel = 100;
+ }
+ else{
+  ga->healthLevel = healthNumStr.toInt();
+ }
+ ga->desiredMotorIntensity = motorStrengthStr.toInt(); 
+ 
+  
  //forceful jump state 1000
  if(motorActionStr.substring(0,1) == "1"){ //index corresponds to FJ
-    //motorActionStr = "FJ";
-    //ga->motorAction = motorActionStr;
+    motorActionStr = "FJ";
+    ga->action = 0;
     //ga->lightShowAction = motorActionStr;
-    actionInt = 0; 
-    ga->action = actionInt; 
     return; 
  }
  
- //Hit by a small enemy state 0100
+ ////Hit by a small enemy state 0100
  motorActionStr = motorActionStr.substring(1);
  if(motorActionStr.substring(0,1) == "1"){
-    //motorActionStr = "HS"; 
-    //ga->motorAction = motorActionStr;
+    motorActionStr = "HS"; 
+    ga->action = 1;
     //ga->lightShowAction = motorActionStr;
-    actionInt = 1; 
-    ga->action = actionInt; 
     return; 
  }
  
  //Hit by a large enemy state 0010
  motorActionStr = motorActionStr.substring(1);
  if(motorActionStr.substring(0,1) == "1"){
-    //motorActionStr = "HL";
-    //ga->motorAction = motorActionStr;
+    motorActionStr = "HL";
+    ga->action = 2;
     //ga->lightShowAction = motorActionStr;
-    actionInt = 2; 
-    ga->action = actionInt; 
     return; 
  }
  //low health state 0001
  motorActionStr = motorActionStr.substring(1);
  if(motorActionStr.substring(0,1) == "1"){
-    //motorActionStr = "LH";
-    //ga->motorAction = motorActionStr;
+    motorActionStr = "LH";
+    ga->action = 3;
     //ga->lightShowAction = motorActionStr;
-    actionInt = 3; 
-    ga->action = actionInt; 
     return; 
  }
  //default state (0000) where no relevant action is occuring
  if(motorActionStr.substring(0,1) == "0"){
-    //motorActionStr = "-";
-    //ga->motorAction = motorActionStr;
+    motorActionStr = "-";
+    ga->action = 4;
     //ga->lightShowAction = motorActionStr;
-    actionInt = 4; 
-    ga->action = actionInt; 
     return; 
  } 
 }
@@ -440,46 +447,104 @@ void run_response1() {
   run_response(wave_motors, wave_powers, on_times, delay_times);
 }
 
+/ Response 2 is the hit by small enemy
+void run_response2(int val) {
+  int i = val / 100
+  // Try to run full response
+  uint8_t wave_motors[][16] = {{4,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
+                               {3,5,7,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
+                               {3,5,6,8, 0,0,0,0, 0,0,0,0, 0,0,0,0},
+                               {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
+                               {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}};
+  unsigned long wave_powers[][16] = {{4090*i,0*i,0*i,0*i,             0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0},
+                                     {4090*i,4090*i,4090*i,0*i,       0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0},
+                                     {4090*i,4090*i,4090*i,4090*i,    0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0},
+                                     {0*i,0*i,0*i,0*i,                0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0},
+                                     {0*i,0*i,0*i,0*i,                0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}};
+  unsigned long on_times[] = {500, 500, 500, 500, 500, 0};
+  unsigned long delay_times[] = {20, 20, 20, 20, 0};
+  run_response(wave_motors, wave_powers, on_times, delay_times);
+}
+// Response 3 is the hit by large enemy
+void run_response3(int val) {
+  int i = val / 100
+  // Try to run full response
+  uint8_t wave_motors[][16] = {{4,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
+                               {3,5,7,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
+                               {3,5,6,8, 0,0,0,0, 0,0,0,0, 0,0,0,0},
+                               {9,10,11,12, 0,0,0,0, 0,0,0,0, 0,0,0,0},
+                               {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}};
+  unsigned long wave_powers[][16] = {{4090*i,0*i,0*i,0*i,             0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0},
+                                     {4090*i,4090*i,4090*i,0*i,       0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0},
+                                     {4090*i,4090*i,4090*i,4090*i,    0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0},
+                                     {4090*i,4090*i,4090*i,4090*i,                0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0},
+                                     {0*i,0*i,0*i,0*i,                0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}};
+  unsigned long on_times[] = {500, 500, 500, 500, 500, 0};
+  unsigned long delay_times[] = {20, 20, 20, 20, 0};
+  run_response(wave_motors, wave_powers, on_times, delay_times);
+}
+// Response 4 is the low health
+void run_response4(int val) {
+  int i = val / 100
+  // Try to run full response
+  uint8_t wave_motors[][16] = {{2,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
+                               {2,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
+                               {2,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
+                               {2,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
+                               {2,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}};
+  unsigned long wave_powers[][16] = {{4090*i,0*i,0*i,0*i, 0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0},
+                                     {4090*i,0*i,0*i,0*i, 0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0},
+                                     {4090*i,0*i,0*i,0*i, 0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0},
+                                     {4090*i,0*i,0*i,0*i, 0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0},
+                                     {4090*i,0*i,0*i,0*i, 0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}};
+  unsigned long on_times[] = {100, 100, 100, 100, 100, 0};
+  unsigned long delay_times[] = {20, 20, 20, 20, 0};
+  run_response(wave_motors, wave_powers, on_times, delay_times);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////END OF MOTOR CODE FNS  //////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 
-// helper-function for easy to use non-blocking timing
-boolean TimePeriodIsOver (unsigned long &StartTime, unsigned long TimePeriod) {
-  unsigned long currentMillis  = millis();  
-  if ( currentMillis - StartTime >= TimePeriod ){
-    StartTime = currentMillis; // store timestamp when the new interval has started
-    return true;               // more time than TimePeriod) has elapsed since last time if-condition was true
-  } 
-  else return false; // return value false because LESS time than TimePeriod has passed by
-}
+//// helper-function for easy to use non-blocking timing
+//boolean TimePeriodIsOver (unsigned long &StartTime, unsigned long TimePeriod) {
+//  unsigned long currentMillis  = millis();  
+//  if ( currentMillis - StartTime >= TimePeriod ){
+//    StartTime = currentMillis; // store timestamp when the new interval has started
+//    return true;               // more time than TimePeriod) has elapsed since last time if-condition was true
+//  } 
+//  else return false; // return value false because LESS time than TimePeriod has passed by
+//}
 
 
 void eventHandler(){
   int currState = gameActions.action; 
   int healthLevel = gameActions.healthLevel;
-  //int motorIntensity  
+  int motorIntensity = gameActions.desiredMotorIntensity;
   
   switch(currState){
     
     case (forcefulJump):
-      run_response1();
+      run_response1(motorIntensity); //motor response 
       cascade(colorArray, 750, 500); //750 and 500 come from "on_times" array under motor functions
       strip.show(); //not sure if i need this
       break;
       
     case (hitSmall):
+      run_response2(motorIntensity); //motor response
       gotHit(); //light response 
       break;
       
     case (hitLarge):
-       gotHit(); //light response 
+       run_response3(motorIntensity);
+       gotHit();  
       break;
       
     case (lowHealth):
-       medium_LH(healthLevel); //light response 
+       run_response4(motorIntensity);
+       medium_LH(healthLevel); 
       break;
      
     default: 
