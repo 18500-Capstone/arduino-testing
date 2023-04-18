@@ -1,0 +1,240 @@
+//Description: This file parses a JSON reponse and sets the value of the struct 
+
+#include <Adafruit_DotStar.h>
+#include <string.h>
+// Because conditional #includes don't work w/Arduino sketches...
+#include <SPI.h>         // COMMENT OUT THIS LINE FOR GEMMA OR TRINKET
+//#include <avr/power.h> // ENABLE THIS LINE FOR GEMMA OR TRINKET
+
+#define NUMPIXELS 60 // Number of LEDs in strip
+
+// Here's how to control the LEDs from any two pins:
+#define DATAPIN    12  //DI (blue)
+#define CLOCKPIN   13  //CI (green)
+
+const int HEIGHT = 6;  //number of rows in the entire light system
+const int WIDTH = 10;  //number of cols in the entire light system
+
+//GRB channel setting colors
+uint32_t offColor = 0x000000;
+uint32_t blueColor = 0x0000FF;
+uint32_t redColor = 0x00FF00;      // 'On' color (starts red)
+uint32_t greenColor = 0xFF0000;      // 'On' color (starts red)
+uint32_t orangeColor = 0x34eb34;
+uint32_t violetColor = 0x2d30c4;
+
+//buffer declaration for reading in bytes
+const int BUFFER_SIZE = 1000;
+char buf[BUFFER_SIZE];
+
+Adafruit_DotStar strip(NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_BRG);
+
+
+//Holds the current actions and (eventually) health level amount 
+typedef struct {
+
+  //FOR THE ACTUAL GAME DATA 
+  int action; //one of 5 values: {FJ, HS, HL, LH, -}->{0, 1, 2, 3, 4}
+  int desiredMotorIntensity; 
+  int healthLevel;  //holds number in range 0-100
+} gameData;
+
+gameData gameActions; //declaring instance of struct 
+
+//parses JSON request and sets the struct values accordingly 
+void parse_request(String req, gameData *ga){
+
+ //declarations
+ char delimitC = ',';
+ String motorActionStr, healthNumStr, motorStrengthStr = "";
+ req = req.substring(1); //get rid of first character
+ 
+ //getting index 
+ int indexOf1stComma = req.indexOf(delimitC);
+ int indexOfLastComma = req.lastIndexOf(delimitC); 
+ int indexOfLastChar = req.length(); 
+ 
+ //isolating motorAction, health num, and motor strength substring
+ motorActionStr = req.substring(0,indexOf1stComma); //1 hot vector "0010" FJ, HS, HL, LH
+ healthNumStr = req.substring(indexOf1stComma+1, indexOfLastComma);
+ //motorStrengthStr = req.substring(indexOfLastComma, indexOfLastChar);
+ motorStrengthStr = req.substring(indexOfLastComma+1);
+  
+ //converting healthNumStr and motorStrengthStr to int and setting the struct values 
+ if(healthNumStr == "NaN"){
+  ga->healthLevel = 100;
+ }
+ else{
+  ga->healthLevel = healthNumStr.toInt();
+ }
+ ga->desiredMotorIntensity = motorStrengthStr.toInt(); 
+ 
+  
+ //forceful jump state 1000
+ if(motorActionStr.substring(0,1) == "1"){ //index corresponds to FJ
+    motorActionStr = "FJ";
+    ga->action = 0;
+    //ga->lightShowAction = motorActionStr;
+    return; 
+ }
+ 
+ ////Hit by a small enemy state 0100
+ motorActionStr = motorActionStr.substring(1);
+ if(motorActionStr.substring(0,1) == "1"){
+    motorActionStr = "HS"; 
+    ga->action = 1;
+    //ga->lightShowAction = motorActionStr;
+    return; 
+ }
+ 
+ //Hit by a large enemy state 0010
+ motorActionStr = motorActionStr.substring(1);
+ if(motorActionStr.substring(0,1) == "1"){
+    motorActionStr = "HL";
+    ga->action = 2;
+    //ga->lightShowAction = motorActionStr;
+    return; 
+ }
+ //low health state 0001
+ motorActionStr = motorActionStr.substring(1);
+ if(motorActionStr.substring(0,1) == "1"){
+    motorActionStr = "LH";
+    ga->action = 3;
+    //ga->lightShowAction = motorActionStr;
+    return; 
+ }
+ //default state (0000) where no relevant action is occuring
+ if(motorActionStr.substring(0,1) == "0"){
+    motorActionStr = "-";
+    ga->action = 4;
+    //ga->lightShowAction = motorActionStr;
+    return; 
+ } 
+}
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  strip.begin(); // Initialize pins for output
+  strip.show();  // Turn all LEDs off ASAP
+
+  //TEST PARSED MESSAGE
+//  Serial.println("parsed request, sending FJ with health 87, intensity 40");
+//  parse_request("?1000,87,40\n", &gameActions);
+//  Serial.println(gameActions.action);
+//  Serial.println(gameActions.healthLevel);
+//  Serial.println(gameActions.desiredMotorIntensity);
+//
+//  Serial.println("parsed request, sending FJ with health NaN, intensity 25 (should see health==100)");
+//  parse_request("?1000,NaN,25\n", &gameActions); 
+//  Serial.println(gameActions.action);
+//  Serial.println(gameActions.healthLevel);
+//  Serial.println(gameActions.desiredMotorIntensity);
+//  
+//  Serial.println("parsed request, sending LH with health 32, intensity 100");
+//  parse_request("?0001,32,100\n", &gameActions); 
+//  Serial.println(gameActions.action);
+//  Serial.println(gameActions.healthLevel);
+//  Serial.println(gameActions.desiredMotorIntensity);
+//  
+//  Serial.println("parsed request, sending nothing with health 20, intensity 0");
+//  parse_request("?0000,20,0\n", &gameActions);
+//  Serial.println(gameActions.action);
+//  Serial.println(gameActions.healthLevel);
+//  Serial.println(gameActions.desiredMotorIntensity);
+//  
+//  Serial.println("parsed request, sending HS with health 55, intensity 20");
+//  parse_request("?0100,55,20\n", &gameActions);
+//  Serial.println(gameActions.action);
+//  Serial.println(gameActions.healthLevel);
+//  Serial.println(gameActions.desiredMotorIntensity);
+//
+//  Serial.println("parsed request, sending HL with health 99, intensity 78");
+//  parse_request("?0010,99,78\n", &gameActions);
+//  Serial.println(gameActions.action);
+//  Serial.println(gameActions.healthLevel);
+//  Serial.println(gameActions.desiredMotorIntensity);
+//  
+//  Serial.println("parsed request, sending FJ with health 12, intensity 66");
+//  parse_request("?1000,12,66\n", &gameActions);
+//  Serial.println(gameActions.action);
+//  Serial.println(gameActions.healthLevel);
+//  Serial.println(gameActions.desiredMotorIntensity);
+//  
+}
+
+////this one currently works locally, have not yet been able to see it works 
+////with the nodeJS
+//void loop() {
+//  while (Serial.available() == 0) {}     //wait for data available
+//  Serial.println("SERIAL AVAILABLE");
+//  String currentLine = Serial.readString();  //read until timeout
+//  
+//  if(currentLine.charAt(currentLine.length()-1) == '\n'){
+//    parse_request(currentLine, &gameActions);
+//    Serial.println("PARSED!");
+//    Serial.println(gameActions.action);
+//    Serial.println(gameActions.healthLevel);
+//    Serial.println(gameActions.desiredMotorIntensity);
+//  }
+
+//}
+
+//void loop() {
+//  // put your main code here, to run repeatedly:
+//  if (Serial.available() > 0) {
+//    int red = Serial.parseInt();
+//    int green = Serial.parseInt();
+//    int blue = Serial.parseInt();
+//    //Serial.println(red.toInt() + " "  + green.toInt() + " " + blue.toInt());
+//  }
+//}
+
+//this one might work better if data is being sent from nodeJS very fast 
+void loop() {
+  //strip.fill(redColor, 0, NUMPIXELS);
+  //strip.show();
+  int startingIndex = 0; 
+  // check if data is available
+  if(Serial.available() > 0) {
+
+    String incomingReq = "";
+    //strip.fill(greenColor, 0, NUMPIXELS);
+    //strip.show();
+
+    while(Serial.available() > 0)
+    {
+      //strip.fill(blueColor, 0, NUMPIXELS);
+      //strip.show();
+      //incomingReq += char(Serial.read());
+
+      //read the incoming string:
+      int rlen = Serial.readBytesUntil('\n', buf, BUFFER_SIZE);
+      String incomingReq = "";
+      for(int i = startingIndex; i < rlen+startingIndex; i++){
+        incomingReq += char(buf[i]);  
+        startingIndex = rlen;  
+      }
+
+      if(incomingReq.equals("1234")){
+        strip.fill(greenColor, 0, NUMPIXELS);
+        strip.show();
+        //delay(250);
+      }
+      else if(incomingReq.equals("5678")){
+        strip.fill(blueColor, 0, NUMPIXELS);
+        strip.show();
+        //delay(250);
+      }
+      else if(incomingReq.equals("9000")){
+        strip.fill(violetColor, 0, NUMPIXELS);
+        strip.show();
+      }
+    }
+  }
+}
+
+//next try: saving it into a buffer
+//need to store 2 ints: rlen and startingIndex 
+//once for loop which stores stringReq is done, update startingIndex to be rlen 
+//https://arduinogetstarted.com/reference/serial-readbytesuntil
