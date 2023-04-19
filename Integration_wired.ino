@@ -116,6 +116,10 @@ const int motor1Pin = 11;
 //////////////////////////// END OF MOTOR CODE DECLARATIONS ////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
 
+//buffer declaration for reading in bytes
+const int BUFFER_SIZE = 1000;
+char buf[BUFFER_SIZE];
+
 const int forcefulJump = 0;
 const int hitSmall = 1; 
 const int hitLarge = 2;
