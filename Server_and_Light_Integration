@@ -163,51 +163,17 @@ void setup() {
 //  
 }
 
-////this one currently works locally, have not yet been able to see it works 
-////with the nodeJS
-//void loop() {
-//  while (Serial.available() == 0) {}     //wait for data available
-//  Serial.println("SERIAL AVAILABLE");
-//  String currentLine = Serial.readString();  //read until timeout
-//  
-//  if(currentLine.charAt(currentLine.length()-1) == '\n'){
-//    parse_request(currentLine, &gameActions);
-//    Serial.println("PARSED!");
-//    Serial.println(gameActions.action);
-//    Serial.println(gameActions.healthLevel);
-//    Serial.println(gameActions.desiredMotorIntensity);
-//  }
 
-//}
-
-//void loop() {
-//  // put your main code here, to run repeatedly:
-//  if (Serial.available() > 0) {
-//    int red = Serial.parseInt();
-//    int green = Serial.parseInt();
-//    int blue = Serial.parseInt();
-//    //Serial.println(red.toInt() + " "  + green.toInt() + " " + blue.toInt());
-//  }
-//}
 
 //this one might work better if data is being sent from nodeJS very fast 
 void loop() {
-  //strip.fill(redColor, 0, NUMPIXELS);
-  //strip.show();
   int startingIndex = 0; 
+
   // check if data is available
   if(Serial.available() > 0) {
 
-    String incomingReq = "";
-    //strip.fill(greenColor, 0, NUMPIXELS);
-    //strip.show();
-
     while(Serial.available() > 0)
     {
-      //strip.fill(blueColor, 0, NUMPIXELS);
-      //strip.show();
-      //incomingReq += char(Serial.read());
-
       //read the incoming string:
       int rlen = Serial.readBytesUntil('\n', buf, BUFFER_SIZE);
       String incomingReq = "";
@@ -215,26 +181,22 @@ void loop() {
         incomingReq += char(buf[i]);  
         startingIndex = rlen;  
       }
+      parse_request(incomingReq, &gameActions);
 
-      if(incomingReq.equals("1234")){
+      if((gameActions.action == 0) && (gameActions.healthLevel == 87) && (gameActions.desiredMotorIntensity == 40)){
         strip.fill(greenColor, 0, NUMPIXELS);
         strip.show();
         //delay(250);
       }
-      else if(incomingReq.equals("5678")){
+      else if((gameActions.action == 3) && (gameActions.healthLevel == 32) && (gameActions.desiredMotorIntensity == 100)){
         strip.fill(blueColor, 0, NUMPIXELS);
         strip.show();
         //delay(250);
       }
-      else if(incomingReq.equals("9000")){
+      else if((gameActions.action == 4) && (gameActions.healthLevel == 20) && (gameActions.desiredMotorIntensity == 0)){
         strip.fill(violetColor, 0, NUMPIXELS);
         strip.show();
       }
     }
   }
 }
-
-//next try: saving it into a buffer
-//need to store 2 ints: rlen and startingIndex 
-//once for loop which stores stringReq is done, update startingIndex to be rlen 
-//https://arduinogetstarted.com/reference/serial-readbytesuntil
