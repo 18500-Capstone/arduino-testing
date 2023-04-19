@@ -83,8 +83,8 @@ unsigned long previousMillis7 = 0;        // will store last time LED was update
 unsigned long previousMillis8 = 0;        // will store last time LED was updated
 long delayT = 750;           // milliseconds of time between cascade up and cascade down
 long delayS = 500;          // milliseconds of time between rows being turned on 
-long delayGotAKill = 250;        //ms
-long delayGotHit = 250;          //ms
+long delayGotAKill = 200;        //ms
+long delayGotHit = 200;          //ms
 long delayLowHealthBasic = 100;  //ms
 bool ledState1 = LOW; //got a hit
 bool ledState2 = LOW; //got a kill 
@@ -309,7 +309,7 @@ void medium_LH(int healthLevel) {
     }  
 }
 
-void gotHitLoop(){
+void gotHitLargeLoop(){
     unsigned long currentMillis1 = millis();
     if((ledState1 == HIGH) && (currentMillis1 - previousMillis1 >= delayGotHit)){
        ledState1 = LOW;
@@ -320,15 +320,37 @@ void gotHitLoop(){
     else if((ledState1 == LOW) && (currentMillis1 - previousMillis1 >= delayGotHit)){
        ledState1 = HIGH;
        previousMillis1 = currentMillis1;
-       strip.fill(redColor, 0, NUMPIXELS);
+       strip.fill(blueColor, 0, NUMPIXELS);
        strip.show(); 
     }  
 }
 
-void gotHit(){
-  gotHitLoop();
-  gotHitLoop(); 
+void gotHitSmallLoop(){
+    unsigned long currentMillis1 = millis();
+    if((ledState1 == HIGH) && (currentMillis1 - previousMillis1 >= delayGotHit)){
+       ledState1 = LOW;
+       previousMillis1 = currentMillis1;
+       strip.fill(offColor, 0, NUMPIXELS);
+       strip.show(); 
+    }
+    else if((ledState1 == LOW) && (currentMillis1 - previousMillis1 >= delayGotHit)){
+       ledState1 = HIGH;
+       previousMillis1 = currentMillis1;
+       strip.fill(yellowGreenColor, 0, NUMPIXELS);
+       strip.show(); 
+    }  
 }
+
+void gotHitSmall(){
+  gotHitSmallLoop();
+  gotHitSmallLoop(); 
+}
+
+void gotHitLarge(){
+  gotHitLargeLoop();
+  gotHitLargeLoop(); 
+}
+
 
 void gotAKillLoop(){
     unsigned long currentMillis2 = millis();
@@ -429,27 +451,28 @@ void run_response(uint8_t wave_motors[][16], unsigned long wave_powers[][16],
 }
 
 // Hopefully I will change later. Hardcoded stuff that will go into a class
-void run_response1() {
+void run_response1(int val) {
+  int i = val / 100;
   // Try to run full response
   uint8_t wave_motors[][16] = {{7,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
                                {4,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
                                {1,2,13,14, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
                                {4,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
                                {7,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}};
-  unsigned long wave_powers[][16] = {{127,127,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
-                                     {127,127,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
-                                     {127,127,127,127, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
-                                     {127,127,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
-                                     {127,127,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}};
+  unsigned long wave_powers[][16] = {{4090*i,4090*i,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
+                                     {4090*i,4090*i,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
+                                     {4090*i,4090*i,4090*i,4090*i, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
+                                     {4090*i,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
+                                     {4090*i,4090*i,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0}};
   unsigned long on_times[] = {500,500,750,500,500};
   unsigned long delay_times[] = {20, 20, 20, 20, 20};
   
   run_response(wave_motors, wave_powers, on_times, delay_times);
 }
 
-/ Response 2 is the hit by small enemy
+// Response 2 is the hit by small enemy
 void run_response2(int val) {
-  int i = val / 100
+  int i = val / 100;
   // Try to run full response
   uint8_t wave_motors[][16] = {{4,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
                                {3,5,7,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
@@ -467,7 +490,7 @@ void run_response2(int val) {
 }
 // Response 3 is the hit by large enemy
 void run_response3(int val) {
-  int i = val / 100
+  int i = val / 100;
   // Try to run full response
   uint8_t wave_motors[][16] = {{4,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
                                {3,5,7,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
@@ -485,7 +508,7 @@ void run_response3(int val) {
 }
 // Response 4 is the low health
 void run_response4(int val) {
-  int i = val / 100
+  int i = val / 100;
   // Try to run full response
   uint8_t wave_motors[][16] = {{2,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
                                {2,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0},
@@ -527,24 +550,25 @@ void eventHandler(){
   switch(currState){
     
     case (forcefulJump):
-      run_response1(motorIntensity); //motor response 
+      //run_response1(motorIntensity); //motor response 
       cascade(colorArray, 750, 500); //750 and 500 come from "on_times" array under motor functions
       strip.show(); //not sure if i need this
       break;
       
     case (hitSmall):
-      run_response2(motorIntensity); //motor response
-      gotHit(); //light response 
+      //run_response2(motorIntensity); //motor response
+      gotHitSmall(); //light response 
       break;
       
     case (hitLarge):
-       run_response3(motorIntensity);
-       gotHit();  
+       //run_response3(motorIntensity);
+       gotHitLarge();  
       break;
       
     case (lowHealth):
-       run_response4(motorIntensity);
-       medium_LH(healthLevel); 
+       //run_response4(motorIntensity);
+       //medium_LH(healthLevel);
+       basic_LH(); 
       break;
      
     default: 
@@ -555,17 +579,24 @@ void eventHandler(){
 }
 
 void loop() {
-  //recieve JSON response through a port and save it under "req"
-  /////JSON response should be type "1000,NUM"
-  /////where everything before comma is one-hot vector and num is curr health level 
-  //parse response
-  parse_request(req, &gameActions);
-  
-  runTests(); 
+  int startingIndex = 0; 
 
-  //switch statements 
-  //eventHandler(); 
-  
+  // check if data is available
+  if(Serial.available() > 0) {
+
+    while(Serial.available() > 0)
+    {
+      //read the incoming string:
+      int rlen = Serial.readBytesUntil('\n', buf, BUFFER_SIZE);
+      String incomingReq = "";
+      for(int i = startingIndex; i < rlen+startingIndex; i++){
+        incomingReq += char(buf[i]);  
+        startingIndex = rlen;  
+      }
+      parse_request(incomingReq, &gameActions);
+      eventHandler(); 
+    }
+  }
 }
 
 //test out the parallelism of the actions. Looking to see if the motor/light responses even
