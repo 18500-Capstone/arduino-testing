@@ -22,6 +22,7 @@ uint32_t redColor = 0x00FF00;      // 'On' color (starts red)
 uint32_t greenColor = 0xFF0000;      // 'On' color (starts red)
 uint32_t orangeColor = 0x34eb34;
 uint32_t violetColor = 0x2d30c4;
+uint32_t yellowGreenColor = 0xd4821e;
 
 //buffer declaration for reading in bytes
 const int BUFFER_SIZE = 1000;
@@ -182,18 +183,30 @@ void loop() {
         startingIndex = rlen;  
       }
       parse_request(incomingReq, &gameActions);
-
-      if((gameActions.action == 0) && (gameActions.healthLevel == 87) && (gameActions.desiredMotorIntensity == 40)){
+      //jump
+      if((gameActions.action == 0)){
         strip.fill(greenColor, 0, NUMPIXELS);
         strip.show();
         //delay(250);
       }
-      else if((gameActions.action == 3) && (gameActions.healthLevel == 32) && (gameActions.desiredMotorIntensity == 100)){
-        strip.fill(blueColor, 0, NUMPIXELS);
+      //hit small
+      else if((gameActions.action == 1)){
+        strip.fill(yellowGreenColor, 0, NUMPIXELS);
         strip.show();
         //delay(250);
       }
-      else if((gameActions.action == 4) && (gameActions.healthLevel == 20) && (gameActions.desiredMotorIntensity == 0)){
+      //hit large 
+      else if((gameActions.action == 2)){
+        strip.fill(blueColor, 0, NUMPIXELS);
+        strip.show();
+      }
+      //low health
+      else if((gameActions.action == 3)){
+        strip.fill(redColor, 0, NUMPIXELS);
+        strip.show();
+        //delay(250);
+      }
+      else if((gameActions.action == 4)){
         strip.fill(violetColor, 0, NUMPIXELS);
         strip.show();
       }
