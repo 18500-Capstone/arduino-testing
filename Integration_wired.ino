@@ -205,7 +205,7 @@ void parse_request(String req, gameData *ga){
 
 void setup() {
   strip.begin(); // Initialize pins for output
-  //strip.fill(blueColor, 0, NUMPIXELS);
+  strip.fill(blueColor, 0, NUMPIXELS);
   strip.show();  // Turn all LEDs off ASAP
   Serial.begin(9600);
 
@@ -404,29 +404,29 @@ void run_motors(int motors[], unsigned long powers[], unsigned long on_time, int
   unsigned long endtime = starttime;
   int MAGICNUM = 10;
   // PRINT OUT MOTORS
-
-  Serial.print("size of wave ");
-  Serial.print(num_on);
-  Serial.println("");
-
-
-  
-  Serial.print("\nwave_motors[i]: ");
-    for (int m = 0; m < NUMSYSM; m++) {
-      if (motors[m] != -1) {
-        Serial.print(motors[m]);
-        Serial.print(" ");
-      }
-    }
-    Serial.println("");
-    Serial.print("wave_powers[i]: ");
-    for (int m = 0; m < NUMSYSM; m++) {
-      if (powers[m] != 0) {
-        Serial.print(powers[m]);
-        Serial.print(" ");
-      }
-    }
-    Serial.println("");
+//
+//  Serial.print("size of wave ");
+//  Serial.print(num_on);
+//  Serial.println("");
+//
+//
+//  
+//  Serial.print("\nwave_motors[i]: ");
+//    for (int m = 0; m < NUMSYSM; m++) {
+//      if (motors[m] != -1) {
+//        Serial.print(motors[m]);
+//        Serial.print(" ");
+//      }
+//    }
+//    Serial.println("");
+//    Serial.print("wave_powers[i]: ");
+//    for (int m = 0; m < NUMSYSM; m++) {
+//      if (powers[m] != 0) {
+//        Serial.print(powers[m]);
+//        Serial.print(" ");
+//      }
+//    }
+//    Serial.println("");
   
   // run motors for specified time
   while ((endtime - starttime) <= on_time) {
@@ -479,12 +479,12 @@ void run_response(int wave_motors[][16], unsigned long wave_powers[][16],
   unsigned long on_times[], unsigned long delay_times[]) {
  
   // loop through and run each wave
-  Serial.print("size of wave_motors: ");
-  Serial.println(sizeof(wave_motors));
+//  Serial.print("size of wave_motors: ");
+//  Serial.println(sizeof(wave_motors));
   int num_on; 
   for (int i=0; i < NUMWAVES; i++) {
-    Serial.print("\nabout to run wave ");
-    Serial.println(i);
+//    Serial.print("\nabout to run wave ");
+//    Serial.println(i);
     
     // calculate how many motors to turn on / have to be cycled through
     num_on = 0;
@@ -499,9 +499,9 @@ void run_response(int wave_motors[][16], unsigned long wave_powers[][16],
     }
 
     // delay for next wave
-    Serial.print("delaying for ");
-    Serial.print(delay_times[i]);
-    Serial.println(" milli seconds");
+//    Serial.print("delaying for ");
+//    Serial.print(delay_times[i]);
+//    Serial.println(" milli seconds");
     delay(delay_times[i]);
   }
 }
