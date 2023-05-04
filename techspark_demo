@@ -1,0 +1,454 @@
+/*************************************************** 
+  This is an example for our Adafruit 16-channel PWM & Servo driver
+  PWM test - this will drive 16 PWMs in a 'wave'
+
+  Pick one up today in the adafruit shop!
+  ------> http://www.adafruit.com/products/815
+
+  These drivers use I2C to communicate, 2 pins are required to  
+  interface.
+
+  Adafruit invests time and resources providing this open source code, 
+  please support Adafruit and open-source hardware by purchasing 
+  products from Adafruit!
+
+  Written by Limor Fried/Ladyada for Adafruit Industries.  
+  BSD license, all text above must be included in any redistribution
+ ****************************************************/
+#include <FastLED.h> 
+#include <Wire.h>
+#include <Adafruit_PWMServoDriver.h>
+
+// called this way, it uses the default address 0x40
+Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
+
+int NUMWAVES = 5;
+int NUMSYSM = 16;
+int arrivingdatabyte;
+
+/*
+ * START OF STRUCT AND PARSING CODE DECLARATIONS 
+ * 
+ */
+
+//buffer declaration for reading in bytes
+const int BUFFER_SIZE = 500;
+char buf[BUFFER_SIZE];
+
+//Holds the current actions and (eventually) health level amount 
+typedef struct {
+
+  //FOR THE ACTUAL GAME DATA 
+  int action; //one of 5 values: {FJ, HS, HL, LH, -}->{0, 1, 2, 3, 4}
+  int desiredMotorIntensity; 
+  int healthLevel;  //holds number in range 0-100
+} gameData;
+
+gameData gameActions; //declaring instance of struct 
+
+//parses JSON request and sets the struct values accordingly 
+void parse_request(String req, gameData *ga){
+
+ //declarations
+ char delimitC = ',';
+ String motorActionStr, healthNumStr, motorStrengthStr = "";
+ req = req.substring(1); //get rid of first character
+ 
+ //getting index 
+ int indexOf1stComma = req.indexOf(delimitC);
+ int indexOfLastComma = req.lastIndexOf(delimitC); 
+ int indexOfLastChar = req.length(); 
+ 
+ //isolating motorAction, health num, and motor strength substring
+ motorActionStr = req.substring(0,indexOf1stComma); //1 hot vector "0010" FJ, HS, HL, LH
+ healthNumStr = req.substring(indexOf1stComma+1, indexOfLastComma);
+ //motorStrengthStr = req.substring(indexOfLastComma, indexOfLastChar);
+ motorStrengthStr = req.substring(indexOfLastComma+1);
+  
+ //converting healthNumStr and motorStrengthStr to int and setting the struct values 
+ if(healthNumStr == "NaN"){
+  ga->healthLevel = 100;
+ }
+ else{
+  ga->healthLevel = healthNumStr.toInt();
+ }
+ ga->desiredMotorIntensity = motorStrengthStr.toInt(); 
+ 
+  
+ //forceful jump state 1000
+ if(motorActionStr.substring(0,1) == "1"){ //index corresponds to FJ
+    motorActionStr = "FJ";
+    ga->action = 0;
+    //ga->lightShowAction = motorActionStr;
+    return; 
+ }
+ 
+ ////Hit by a small enemy state 0100
+ motorActionStr = motorActionStr.substring(1);
+ if(motorActionStr.substring(0,1) == "1"){
+    motorActionStr = "HS"; 
+    ga->action = 1;
+    //ga->lightShowAction = motorActionStr;
+    return; 
+ }
+ 
+ //Hit by a large enemy state 0010
+ motorActionStr = motorActionStr.substring(1);
+ if(motorActionStr.substring(0,1) == "1"){
+    motorActionStr = "HL";
+    ga->action = 2;
+    //ga->lightShowAction = motorActionStr;
+    return; 
+ }
+ //low health state 0001
+ motorActionStr = motorActionStr.substring(1);
+ if(motorActionStr.substring(0,1) == "1"){
+    motorActionStr = "LH";
+    ga->action = 3;
+    //ga->lightShowAction = motorActionStr;
+    return; 
+ }
+ //default state (0000) where no relevant action is occuring
+ if(motorActionStr.substring(0,1) == "0"){
+    motorActionStr = "-";
+    ga->action = 4;
+    //ga->lightShowAction = motorActionStr;
+    return; 
+ } 
+}
+
+/*
+ * END OF STRUCT AND PARSING CODE DECLARATIONS
+ */
+
+/*
+ * START OF LED SET UP 
+ *
+ */
+
+//LED Set up 
+#define NUM_LEDS 60 //change to 60
+#define LED_PIN 11      //(blue) on vest
+#define CLOCK_PIN 12   //(green) on vest
+#define COLOR_ORDER BGR   //BLUE, GREEN, BLUE
+
+CRGB leds[NUM_LEDS];
+
+uint8_t paletteIndex = 0; 
+
+// Gradient palette "cascade_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/gmt/tn/GMT_seis.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Size: 40 bytes of program space.
+
+DEFINE_GRADIENT_PALETTE( cascade_gp ) {
+    0,  88,  0,  0,
+   28, 255,  0,  0,
+   56, 255, 22,  0,
+   85, 255,104,  0,
+  113, 255,255,  0,
+  141, 255,255,  0,
+  169,  17,255,  1,
+  198,   0,223, 31,
+  226,   0, 19,255,
+  255,   0,  0,147};
+
+
+CRGBPalette16 myPal = cascade_gp;  
+
+/*
+ * END OF LED SET UP
+ */
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("16 channel PWM test!");
+
+  pwm.begin();
+  pwm.setOscillatorFrequency(27000000);
+  pwm.setPWMFreq(1600);  // This is the maximum PWM frequency
+
+  // if you want to really speed stuff up, you can go into 'fast 400khz I2C' mode
+  // some i2c devices dont like this so much so if you're sharing the bus, watch
+  // out for this!
+  Wire.setClock(400000);
+
+  FastLED.addLeds<DOTSTAR, LED_PIN, CLOCK_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+  FastLED.setBrightness(100);
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
+  FastLED.show(); 
+}
+
+
+/* Run a batch of motors at some specified powers for some time
+ *  IN: motors : an array of motors to run
+ *  IN: powers : an array the same size of motors for the power of each motor
+ *  IN: on_time : time to keep the motors on
+ *  OUT : nothing -- controls I2C vibration motors
+*/
+void run_motors(int motors[], unsigned long powers[], unsigned long on_time, int num_on) {
+  unsigned long starttime = millis();
+  unsigned long endtime = starttime;
+  int MAGICNUM = 10;
+  // PRINT OUT MOTORS
+
+  Serial.print("size of wave ");
+  Serial.print(num_on);
+  Serial.println("");
+
+
+  
+  Serial.print("\nwave_motors[i]: ");
+    for (int m = 0; m < NUMSYSM; m++) {
+      if (motors[m] != -1) {
+        Serial.print(motors[m]);
+        Serial.print(" ");
+      }
+    }
+    Serial.println("");
+    Serial.print("wave_powers[i]: ");
+    for (int m = 0; m < NUMSYSM; m++) {
+      if (powers[m] != 0) {
+        Serial.print(powers[m]);
+        Serial.print(" ");
+      }
+    }
+    Serial.println("");
+  
+  // run motors for specified time
+  while ((endtime - starttime) <= on_time) {
+    // Run all of the motors at their specified powers
+    // if only one motor has to turn on, turn it on to full power
+    if (num_on < 2) {
+      for (int i=0; i < NUMSYSM; i++) {
+        if (motors[i] != -1) {        // If a motor is specified. AKA not -1
+          if (motors[i] != 16 and motors[i] != 17) {   // The first 0-15 motors run on the driver
+            pwm.setPWM(motors[i], 0, powers[i]); // run each motor at their given power
+//          pwm.writeMicroseconds(motors[i], MAGICNUM);
+          }
+          else {
+            // turn on Arduino pins
+          }
+          
+        }
+      }
+      #ifdef ESP8266 
+        yield(); // take a breather, required for ESP8266
+      #endif 
+      endtime = millis();
+    }
+
+    else { // if there are 2+ motors that are supposed to be on at the same time
+      for (uint16_t i=0; i<4096; i += 8) {
+        for (uint8_t pwmidx=0; pwmidx < 16; pwmidx++) {
+          if (motors[pwmidx] != -1) {        // If a motor is specified. AKA not -1
+            if (motors[i] != 16 and motors[i] != 17) {   // The first 0-15 motors run on the driver
+              pwm.setPWM(motors[pwmidx], 0, (i + (4096/num_on)*motors[pwmidx]) % powers[pwmidx] );
+  //            pwm.setPWM(motors[pwmidx], 0, (powers[pwmidx] + (4096/num_on)*motors[pwmidx]) % powers[pwmidx] );
+            }
+            else {
+              // turn on Arduino pins
+            }
+          }
+        }
+          
+        }
+      #ifdef ESP8266 
+        yield(); // take a breather, required for ESP8266
+      #endif 
+      endtime = millis();
+    }
+  }
+  
+  // turn all motors off
+  // Serial.println("stopping motors");
+  for (int i=0; i < NUMSYSM; i++) {
+    pwm.setPWM(i, 0, 0);
+  }
+  // turn off Arduino pins
+}
+
+/* Run a full haptic response
+ *  IN: wave_motors : 2D array of motor values, one row for each wave
+ *  IN: wave_powers : 2D array of motor power values, one row for each wave
+ *  IN: on_times    : time in miliseconds for how long to delay between waves
+ *  OUT : nothing -- controls I2C vibration motors
+*/
+void run_response(int wave_motors[][16], unsigned long wave_powers[][16], 
+  unsigned long on_times[], unsigned long delay_times[]) {
+ 
+  // loop through and run each wave
+  Serial.print("size of wave_motors: ");
+  Serial.println(sizeof(wave_motors));
+  int num_on; 
+  for (int i=0; i < NUMWAVES; i++) {
+    Serial.print("\nabout to run wave ");
+    Serial.println(i);
+    
+    // calculate how many motors to turn on / have to be cycled through
+    num_on = 0;
+    for (int m=0; m < NUMSYSM; m++) {
+      if (wave_motors[i][m] != -1) {
+        num_on++;
+      }
+    }
+
+    if (num_on > 0) {
+      run_motors(wave_motors[i], wave_powers[i], on_times[i], num_on);
+    }
+
+    // delay for next wave
+    Serial.print("delaying for ");
+    Serial.print(delay_times[i]);
+    Serial.println(" milli seconds");
+    delay(delay_times[i]);
+  }
+}
+
+// Hopefully I will change later. Hardcoded stuff that will go into a class
+void run_response1(int val) {
+  int i = val / 100;
+  // Try to run full response
+  int o = -1;
+  int wave_motors[][16] = {{2,7,3,6, 15,17,13,16, o,o,o,o, o,o,o,o}, 
+                           {1,5,10,11, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {0,4,8,9, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {1,5,10,11, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {2,7,3,6, 15,17,13,16, o,o,o,o, o,o,o,o}};
+  unsigned long wave_powers[][16] = {{4096*i,4096*i,4096*i,4096*i, 4096*i,4096*i,4096*i,4096*i, 0,0,0,0, 0,0,0,0}, 
+                                     {4096*i,4096*i,4096*i,4096*i, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
+                                     {4096*i,4096*i,4096*i,4096*i, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
+                                     {4096*i,4096*i,4096*i,4096*i, 0,0,0,0, 0,0,0,0, 0,0,0,0},
+                                     {4090*i,4090*i,4090*i,4090*i, 4096*i,4096*i,4096*i,4096*i, 0,0,0,0, 0,0,0,0}};
+  unsigned long on_times[] = {500,500,750,500,500};
+  unsigned long delay_times[] = {20, 20, 20, 20, 20};
+  
+  run_response(wave_motors, wave_powers, on_times, delay_times);
+}
+
+// Responce 2 is the hit by small enemy
+void run_response2(int val) {
+  int i = val / 100;
+  // Try to run full response
+  int o = -1;
+  int wave_motors[][16] = {{3,6,o,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {2,7,1,5, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {o,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {o,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {o,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}};
+  unsigned long wave_powers[][16] = {{4090*i,0*i,0*i,0*i,             0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {4090*i,4090*i,4090*i,0*i,       0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {4090*i,4090*i,4090*i,4090*i,    0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {0*i,0*i,0*i,0*i,                0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {0*i,0*i,0*i,0*i,                0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}};
+  unsigned long on_times[] = {500, 750, 0, 0, 0};
+  unsigned long delay_times[] = {20, 0, 0, 0, 0};
+  
+  run_response(wave_motors, wave_powers, on_times, delay_times);
+}
+
+// Responce 3 is the hit by large enemy
+void run_response3(int val) {
+  int i = val / 100;
+  // Try to run full response
+  int o = -1;
+  int wave_motors[][16] = {{3,6,o,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {2,7,1,5, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {12,14,13,15, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {1,11,5,10, 16,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {o,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}};
+  unsigned long wave_powers[][16] = {{4090*i,4090*i,0*i,0*i,          0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {4090*i,4090*i,4090*i,4090*i,    0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {4090*i,4090*i,4090*i,4090*i,    4090*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {4096*i,4096*i,4096*i,4096*i,    4090*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {0*i,0*i,0*i,0*i,                0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}};
+  unsigned long on_times[] = {500, 500, 250, 250, 0};
+  unsigned long delay_times[] = {20, 20, 20, 0, 0};
+  
+  run_response(wave_motors, wave_powers, on_times, delay_times);
+}
+
+// Responce 4 is the low health
+void run_response4(int val) {
+  int i = val / 100;
+  // Try to run full response
+  int o = -1;
+  int wave_motors[][16] = {{4,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {4,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {4,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {4,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {o,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}};
+  unsigned long wave_powers[][16] = {{4090*i,0*i,0*i,0*i,             0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {4090*i,4090*i,4090*i,0*i,       0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {4090*i,4090*i,4090*i,4090*i,    0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {0*i,0*i,0*i,0*i,                0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {0*i,0*i,0*i,0*i,                0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}};
+  unsigned long on_times[] = {200, 200, 200, 200, 200, 0};
+  unsigned long delay_times[] = {40, 40, 40, 40, 0};
+  
+  run_response(wave_motors, wave_powers, on_times, delay_times);
+}
+
+void loop() {
+  // Read from serial port over and over
+  int startingIndex = 0; 
+
+  // check if data is available
+  if(Serial.available() > 0) {
+
+    while(Serial.available() > 0)
+    {
+      //read the incoming string:
+      int rlen = Serial.readBytesUntil('\n', buf, BUFFER_SIZE);
+      String incomingReq = "";
+      for(int i = startingIndex; i < rlen+startingIndex; i++){
+        incomingReq += char(buf[i]);  
+        startingIndex = rlen;  
+      }
+      if(startingIndex + 100 >= BUFFER_SIZE) memset(buf, 0, sizeof(buf)); //new code idk if it works 
+      parse_request(incomingReq, &gameActions);
+
+       //jump
+      if((gameActions.action == 0)){
+        //insert code for jump here 
+        run_response1(gameActions.desiredMotorIntensity);
+        //CASCADE LIGHT CODE
+        fill_palette(leds, NUM_LEDS, paletteIndex, 255 / 60, myPal, 255, LINEARBLEND);
+        EVERY_N_MILLISECONDS(10){
+        paletteIndex++;
+        }
+        FastLED.show(); 
+      }
+      //hit small
+      else if((gameActions.action == 1)){
+        //insert code for hit small here
+        run_response2(gameActions.desiredMotorIntensity);
+        //light response 
+        fill_solid(leds, NUM_LEDS, CRGB::Magenta); 
+        FastLED.show(); 
+      }
+      //hit large 
+      else if((gameActions.action == 2)){
+        //insert code for hit large here 
+        run_response3(gameActions.desiredMotorIntensity);
+        //light response 
+        fill_solid(leds, NUM_LEDS, CRGB::Yellow);
+        FastLED.show(); 
+      }
+      //low health
+      else if((gameActions.action == 3)){
+        //insert code for low health here 
+        run_response4(gameActions.desiredMotorIntensity);
+        //light response 
+        fill_solid(leds, NUM_LEDS, CRGB::Red);
+        FastLED.show(); 
+        //fill_gradient_RGB(leds, NUM_LEDS, CRGB::Red, CRGB::Black, CRGB::Red, CRGB::Black);
+        
+      }
+//      //do nothing 
+//      else if((gameActions.action == 4)){
+//        continue; 
+//    }
+    }
+  } 
+}
