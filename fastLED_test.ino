@@ -4,31 +4,12 @@
 #define NUM_LEDS 60 //change to 60
 #define LED_PIN 11      //(blue) on vest
 #define CLOCK_PIN 12   //(green) on vest
-#define COLOR_ORDER BGR   //BLUE, GREEN, BLUE
+#define COLOR_ORDER BGR  //BLUE, GREEN, RED
 
 CRGB leds[NUM_LEDS];
-
+uint8_t colorIndex[NUM_LEDS];
+uint8_t patternCounter = 0;
 uint8_t paletteIndex = 0; 
-
-DEFINE_GRADIENT_PALETTE( Sunset_Real_gp ){
-  0,   120,   0,   0,       
-  22, 179, 22,   0,     
-  51, 255, 104, 0,  
-  85, 167, 22, 10,
-  135, 100, 0, 103,
-  190, 16, 0, 130,    
-  255, 0, 0, 160     
-};
-
-// Gradient palette "cascadeBackup_gp", originally from
-// http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_01.png.index.html
-// converted for FastLED with gammas (2.6, 2.2, 2.5)
-// Size: 12 bytes of program space.
-
-DEFINE_GRADIENT_PALETTE( cascadeBackup_gp ) {
-    0, 227,101,  3,
-  117, 194, 18, 19,
-  255,  92,  8,192};
 
 // Gradient palette "cascade_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/gmt/tn/GMT_seis.png.index.html
@@ -57,8 +38,10 @@ void setup() {
   fill_solid(leds, NUM_LEDS, CRGB::Black);
   FastLED.show(); 
 
-  //FJ_LightShow();
-  
+  //Fill the colorIndex array with random numbers
+  for (int i = 0; i < NUM_LEDS; i++) {
+    colorIndex[i] = random8();
+  }
 }
 
 //rainbow light show for forceful jump
@@ -70,7 +53,8 @@ void FJ_LightShow(){
   FastLED.show(); 
 }
 
-void loop() {
+//pixel moving fast
+void moveFast(){
   //blue light pixel moving around 
   uint8_t sinBeat = beatsin8(22, 0, NUM_LEDS - 1, 0, 0);
   leds[sinBeat] = CRGB::Blue;
@@ -80,25 +64,60 @@ void loop() {
     Serial.println(sinBeat);
   }
   FastLED.show();
-
   
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////
-////////////////TEMP CODE ///////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////
-  //leds[0] = CRGB(r, g, b);
-  //leds[0] = CRGB::Black; 
-  //fill_solid(leds, NUM_LEDS, CRGB::Black);
-  //fill_gradient_RGB(leds, NUM_LEDS, CRGB::Red, CRGB::Yellow, CRGB::Green, CRGB::Blue);
-  //fill_rainbow(leds, NUM_LEDS, 0, 255/NUM_LEDS);
-  //FastLED.show(); 
-  //delay(500);
+//flash red when in low health 
+void lowHealth_LightShow(){
+  EVERY_N_MILLISECONDS(200){
+     fill_solid(leds, NUM_LEDS, CRGB::Black);
+     FastLED.show();
+  }
+  EVERY_N_MILLISECONDS(400){
+   fill_solid(leds, NUM_LEDS, CRGB::Red); //when player dies, lights stays red
+   FastLED.show();
+  }
+}
 
-  //fill_gradient_RGB(leds, NUM_LEDS, CRGB::Red, CRGB::Yellow, CRGB::Green, CRGB::Blue);
-  //fill_rainbow(leds, NUM_LEDS, 0, 255/NUM_LEDS);
-  //FastLED.show(); 
-//  fill_solid(leds, NUM_LEDS, CRGB::Black);
-//  FastLED.show(); 
-//  delay(500);
-//
+//blue light pixel moving around 
+void hitSmall_LightShow(){
+  uint8_t sinBeat = beatsin8(22, 0, NUM_LEDS - 1, 0, 0);
+  leds[sinBeat] = CRGB(58, 156, 223);
+  fadeToBlackBy(leds, NUM_LEDS, 30); //30 is hit small, 5 is hit large
+  FastLED.show();  
+}
+
+//purple light pixel moving around 
+void hitLarge_LightShow(){
+  uint8_t sinBeat = beatsin8(22, 0, NUM_LEDS - 1, 0, 0);
+  leds[sinBeat] = CRGB::Magenta;
+  fadeToBlackBy(leds, NUM_LEDS, 5); //20 is hit small, 5 is hit large
+  FastLED.show();
+  
+}
+
+void loop() {
+  switch(patternCounter){
+    case 0: 
+      FJ_LightShow();
+      break;
+    case 1: 
+      hitSmall_LightShow(); 
+      break;
+    case 2: 
+      hitLarge_LightShow();
+      break;
+    case 3:
+      lowHealth_LightShow();
+      break; 
+  }
+
+  EVERY_N_SECONDS(5){
+    nextPattern();
+  }
+  FastLED.show();
+}
+
+void nextPattern(){
+  patternCounter = (patternCounter + 1) % 4;
+}
