@@ -172,6 +172,7 @@ void parse_request(String req, gameData *ga){
 }
 
 void setup() {
+  Serial.begin(9600);
   //lightcode set up 
   FastLED.addLeds<DOTSTAR, LED_PIN, CLOCK_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
   FastLED.setBrightness(100);
@@ -550,13 +551,18 @@ void eventHandler(){
 
 void loop() {
   //Serial.flush(); 
+  //fill_solid(leds, NUM_LEDS, CRGB::Green);
+  //FastLED.show();
  int startingIndex = 0; 
  // check if data is available
  if(Serial.available() > 0) {
-   fill_solid(leds, NUM_LEDS, CRGB::Blue);
-   FastLED.show();
+    fill_solid(leds, NUM_LEDS, CRGB::Blue);
+    FastLED.show();
+
    while(Serial.available() > 0)
    {
+     //fill_solid(leds, NUM_LEDS, CRGB::Blue);
+     //FastLED.show();
      //read the incoming string:
      int rlen = Serial.readBytesUntil('\n', buf, BUFFER_SIZE);
      String incomingReq = "";
@@ -565,7 +571,53 @@ void loop() {
        startingIndex = rlen;  
      }
      parse_request(incomingReq, &gameActions);
-     //eventHandler(); 
+     //eventHandler();
+
+     int currState = gameActions.action; 
+     int healthLevel = gameActions.healthLevel;
+     int motorIntensity = gameActions.desiredMotorIntensity;
+    tmpTime = millis();
+    // This is jump
+    if(currState == 0){
+      run_response1(motorIntensity);
+      tmpTime = millis();
+      while (millis() - tmpTime < 1000) {
+        FJ_LightShow();
+      }      
+      fill_solid(leds, NUM_LEDS, CRGB::Black);
+      FastLED.show();  
+    }
+    // This is small hit
+    else if(currState == 1){
+      run_response2(motorIntensity); //motor response 
+      tmpTime = millis();
+      while (millis() - tmpTime < 1000) {
+        hitSmall_LightShow();
+      }
+      fill_solid(leds, NUM_LEDS, CRGB::Black);
+      FastLED.show();
+      
+    }
+    // This is large hit
+    else if(currState == 2){
+      run_response3(motorIntensity); //motor response 
+      tmpTime = millis();
+      while (millis() - tmpTime < 1000) {
+        hitLarge_LightShow();
+      } 
+      fill_solid(leds, NUM_LEDS, CRGB::Black);
+      FastLED.show();
+    }
+    // This is low health
+    else if(currState == 3){
+      run_response1(motorIntensity); //motor response
+      tmpTime = millis();
+      while (millis() - tmpTime < 1000) {
+        lowHealth_LightShow();
+      }      
+      fill_solid(leds, NUM_LEDS, CRGB::Black);
+      FastLED.show();
+    } 
      
      //clear buffer BEFORE it gets too full
     //  if(startingIndex + 100 >= BUFFER_SIZE) {
