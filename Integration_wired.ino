@@ -34,6 +34,7 @@ CRGB leds[NUM_LEDS];
 uint8_t colorIndex[NUM_LEDS];
 uint8_t patternCounter = 0;
 uint8_t paletteIndex = 0; 
+long tmpTime = 0;
 
 // Gradient palette "cascade_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/gmt/tn/GMT_seis.png.index.html
@@ -83,7 +84,7 @@ const int motor17pin2 = 10;
 ////////////////////////////////////////////////////////////////////////////////////
 
 //buffer declaration for reading in bytes
-const int BUFFER_SIZE = 600;
+const int BUFFER_SIZE = 800;
 char buf[BUFFER_SIZE];
 
 const int forcefulJump = 0;
@@ -171,8 +172,6 @@ void parse_request(String req, gameData *ga){
 }
 
 void setup() {
-  Serial.begin(9600);
-  Serial.println("Begin");
   //lightcode set up 
   FastLED.addLeds<DOTSTAR, LED_PIN, CLOCK_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
   FastLED.setBrightness(100);
@@ -215,19 +214,19 @@ void FJ_LightShow(){
   FastLED.show(); 
 }
 
-//pixel moving fast
-void moveFast(){
-  //blue light pixel moving around 
-  uint8_t sinBeat = beatsin8(22, 0, NUM_LEDS - 1, 0, 0);
-  leds[sinBeat] = CRGB::Blue;
+// //pixel moving fast
+// void moveFast(){
+//   //blue light pixel moving around 
+//   uint8_t sinBeat = beatsin8(22, 0, NUM_LEDS - 1, 0, 0);
+//   leds[sinBeat] = CRGB::Blue;
 
-  fadeToBlackBy(leds, NUM_LEDS, 10);
-  EVERY_N_MILLISECONDS(10){
-    Serial.println(sinBeat);
-  }
-  FastLED.show();
+//   fadeToBlackBy(leds, NUM_LEDS, 10);
+//   EVERY_N_MILLISECONDS(10){
+//     Serial.println(sinBeat);
+//   }
+//   FastLED.show();
   
-}
+// }
 
 //flash red when in low health 
 void lowHealth_LightShow(){
@@ -500,68 +499,10 @@ void eventHandler(){
   int healthLevel = gameActions.healthLevel;
   int motorIntensity = gameActions.desiredMotorIntensity;
   
-  switch(currState){
-    case (forcefulJump): //case 0
-      run_response1(100); //motor response 
-      FJ_LightShow();
-      break;
-    case (hitSmall):  //case 1
-      run_response2(100); //motor response
-      hitSmall_LightShow(); 
-      break;
-      
-    case (hitLarge):  //case 2
-      run_response3(100);
-      hitLarge_LightShow();
-      break;
-      
-    case (lowHealth): //case 3
-      run_response4(100);
-      lowHealth_LightShow();
-      break;
-     
-//    default: 
-//      //only run lights. No motor response
-//      defaultLights(); 
-//      break; 
-  }
-}
-
-//void loop() {
-//  int startingIndex = 0; 
-//  // check if data is available
-//  if(Serial.available() > 0) {
-//    fill_solid(leds, NUM_LEDS, CRGB::Blue);
-//    FastLED.show();
-//    while(Serial.available() > 0)
-//    {
-//      //read the incoming string:
-//      int rlen = Serial.readBytesUntil('\n', buf, BUFFER_SIZE);
-//      String incomingReq = "";
-//      for(int i = startingIndex; i < rlen+startingIndex; i++){
-//        incomingReq += char(buf[i]);    //eventually clear buffer 
-//        startingIndex = rlen;  
-//      }
-//      parse_request(incomingReq, &gameActions);
-//      eventHandler(); 
-//      
-//      //clear buffer BEFORE it gets too full
-//      if(startingIndex + 100 >= BUFFER_SIZE) {
-//        memset(buf, 0, sizeof(buf)); //buf[0] = char(0)
-//        startingIndex = 0;          //update starting index
-//      }
-//       
-//    }
-//  }
-//}
-long tmpTime = 0;
-void loop(){
-    tmpTime = millis();
-    Serial.println(patternCounter);
+  tmpTime = millis();
     // This is jump
-    if(patternCounter == 0){
-      Serial.println("FJ");
-      run_response1(80);
+    if(currState == 0){
+      run_response1(motorIntensity);
       tmpTime = millis();
       while (millis() - tmpTime < 1000) {
         FJ_LightShow();
@@ -570,9 +511,8 @@ void loop(){
       FastLED.show();  
     }
     // This is small hit
-    else if(patternCounter == 1){
-      Serial.println("small hit");
-      run_response2(80); //motor response 
+    else if(currState == 1){
+      run_response2(motorIntensity); //motor response 
       tmpTime = millis();
       while (millis() - tmpTime < 1000) {
         hitSmall_LightShow();
@@ -582,9 +522,8 @@ void loop(){
       
     }
     // This is large hit
-    else if(patternCounter == 2){
-      Serial.println("large hit");
-      run_response3(80); //motor response 
+    else if(currState == 2){
+      run_response3(motorIntensity); //motor response 
       tmpTime = millis();
       while (millis() - tmpTime < 1000) {
         hitLarge_LightShow();
@@ -593,9 +532,8 @@ void loop(){
       FastLED.show();
     }
     // This is low health
-    else if(patternCounter == 3){
-      Serial.println("Low Health");
-      run_response1(80); //motor response
+    else if(currState == 3){
+      run_response1(motorIntensity); //motor response
       tmpTime = millis();
       while (millis() - tmpTime < 1000) {
         lowHealth_LightShow();
@@ -603,13 +541,93 @@ void loop(){
       fill_solid(leds, NUM_LEDS, CRGB::Black);
       FastLED.show();
     }
-  EVERY_N_SECONDS(5){
-    nextPattern();
-  }
-  //fill_solid(leds, NUM_LEDS, CRGB::Blue);
-  FastLED.show();
+     
+//    default: 
+//      //only run lights. No motor response
+//      defaultLights(); 
+//      break; 
 }
 
-void nextPattern(){
-  patternCounter = (patternCounter + 1) % 4;
+void loop() {
+  //Serial.flush(); 
+ int startingIndex = 0; 
+ // check if data is available
+ if(Serial.available() > 0) {
+   fill_solid(leds, NUM_LEDS, CRGB::Blue);
+   FastLED.show();
+   while(Serial.available() > 0)
+   {
+     //read the incoming string:
+     int rlen = Serial.readBytesUntil('\n', buf, BUFFER_SIZE);
+     String incomingReq = "";
+     for(int i = startingIndex; i < rlen+startingIndex; i++){
+       incomingReq += char(buf[i]);    //eventually clear buffer 
+       startingIndex = rlen;  
+     }
+     parse_request(incomingReq, &gameActions);
+     //eventHandler(); 
+     
+     //clear buffer BEFORE it gets too full
+    //  if(startingIndex + 100 >= BUFFER_SIZE) {
+    //    memset(buf, 0, sizeof(buf)); //buf[0] = char(0)
+    //    startingIndex = 0;          //update starting index
+    //   }
+      
+   }
+ }
 }
+
+
+// void loop(){
+//     tmpTime = millis();
+//     // This is jump
+//     if(patternCounter == 0){
+//       run_response1(80);
+//       tmpTime = millis();
+//       while (millis() - tmpTime < 1000) {
+//         FJ_LightShow();
+//       }      
+//       fill_solid(leds, NUM_LEDS, CRGB::Black);
+//       FastLED.show();  
+//     }
+//     // This is small hit
+//     else if(patternCounter == 1){
+//       run_response2(80); //motor response 
+//       tmpTime = millis();
+//       while (millis() - tmpTime < 1000) {
+//         hitSmall_LightShow();
+//       }
+//       fill_solid(leds, NUM_LEDS, CRGB::Black);
+//       FastLED.show();
+      
+//     }
+//     // This is large hit
+//     else if(patternCounter == 2){
+//       run_response3(80); //motor response 
+//       tmpTime = millis();
+//       while (millis() - tmpTime < 1000) {
+//         hitLarge_LightShow();
+//       } 
+//       fill_solid(leds, NUM_LEDS, CRGB::Black);
+//       FastLED.show();
+//     }
+//     // This is low health
+//     else if(patternCounter == 3){
+//       run_response1(80); //motor response
+//       tmpTime = millis();
+//       while (millis() - tmpTime < 1000) {
+//         lowHealth_LightShow();
+//       }      
+//       fill_solid(leds, NUM_LEDS, CRGB::Black);
+//       FastLED.show();
+//     }
+//   EVERY_N_SECONDS(5){
+//     nextPattern();
+//   }
+//   //fill_solid(leds, NUM_LEDS, CRGB::Blue);
+//   FastLED.show();
+// }
+
+// void nextPattern(){
+//   patternCounter = (patternCounter + 1) % 4;
+// }
