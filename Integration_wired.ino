@@ -72,10 +72,10 @@ int NUMWAVES = 5;
 int NUMSYSM = 16;
 int arrivingdatabyte;
 
-const int motor16pin1 = 3;
-const int motor16pin2 = 5;
-const int motor17pin1 = 6;
-const int motor17pin2 = 9;
+const int motor16pin1 = 5;
+const int motor16pin2 = 6;
+const int motor17pin1 = 9;
+const int motor17pin2 = 10;
 
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -172,7 +172,7 @@ void parse_request(String req, gameData *ga){
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("begin...");
+  Serial.println("Begin");
   //lightcode set up 
   FastLED.addLeds<DOTSTAR, LED_PIN, CLOCK_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
   FastLED.setBrightness(100);
@@ -378,7 +378,7 @@ void run_response(int wave_motors[][16], unsigned long wave_powers[][16],
     }
 
     // delay for next wave
-    //delay(delay_times[i]);
+    delay(delay_times[i]);
   }
 }
 
@@ -387,16 +387,16 @@ void run_response1(int val) {
   int i = val / 100;
   // Try to run full response
   int o = -1;
-  int wave_motors[][16] = {{2,7,3,o, 15,17,13,16, o,o,o,o, o,o,o,o}, 
-                           {1,6,5,10, 11,o,o,o, o,o,o,o, o,o,o,o}, 
+  int wave_motors[][16] = {{6,7,3,o, 15,17,13,16, o,o,o,o, o,o,o,o}, 
+                           {2,1,5,10, 11,o,o,o, o,o,o,o, o,o,o,o}, 
                            {0,4,8,9, o,o,o,o, o,o,o,o, o,o,o,o}, 
-                           {1,5,6,10, 11,16,o,o, o,o,o,o, o,o,o,o}, 
-                           {2,7,3,o, 15,17,13,o, o,o,o,o, o,o,o,o}};
-  unsigned long wave_powers[][16] = {{4096*i,4096*i,4096*i,4096*i, 4096*i,4096*i,4096*i,4096*i, 0,0,0,0, 0,0,0,0}, 
+                           {2,1,5,10, 11,16,o,o, o,o,o,o, o,o,o,o}, 
+                           {6,7,3,o, 15,17,13,o, o,o,o,o, o,o,o,o}};
+  unsigned long wave_powers[][16] = {{4096*i,4096*i,4096*i,4096*i, 4096*i,150*i,4096*i,150*i, 0,0,0,0, 0,0,0,0}, 
                                      {4096*i,4096*i,4096*i,4096*i, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
                                      {4096*i,4096*i,4096*i,4096*i, 0,0,0,0, 0,0,0,0, 0,0,0,0}, 
-                                     {4096*i,4096*i,4096*i,4096*i, 0,0,0,0, 0,0,0,0, 0,0,0,0},
-                                     {4090*i,4090*i,4090*i,4090*i, 4096*i,4096*i,4096*i,4096*i, 0,0,0,0, 0,0,0,0}};
+                                     {4096*i,4096*i,4096*i,4096*i, 4096*i,250*i,0,0, 0,0,0,0, 0,0,0,0},
+                                     {4090*i,4090*i,4090*i,4090*i, 4096*i,250*i,4096*i,4096*i, 0,0,0,0, 0,0,0,0}};
   unsigned long on_times[] = {500,500,750,500,500};
   unsigned long delay_times[] = {20, 20, 20, 20, 20};
   
@@ -429,8 +429,8 @@ void run_response3(int val) {
   int i = val / 100;
   // Try to run full response
   int o = -1;
-  int wave_motors[][16] = {{0,4,5,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
-                           {2,7,1,6, o,o,o,o, o,o,o,o, o,o,o,o}, 
+  int wave_motors[][16] = {{0,4,1,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {2,5,7,3, o,o,o,o, o,o,o,o, o,o,o,o}, 
                            {12,14,13,15, o,o,o,o, o,o,o,o, o,o,o,o}, 
                            {o,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
                            {o,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}};
@@ -458,10 +458,33 @@ void run_response4(int val) {
   unsigned long wave_powers[][16] = {{4090*i,0*i,0*i,0*i,             0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
                                      {4090*i,4090*i,4090*i,0*i,       0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
                                      {4090*i,4090*i,4090*i,4090*i,    0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
-                                     {0*i,0*i,0*i,0*i,                0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {4090*i,0*i,0*i,0*i,                0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
                                      {0*i,0*i,0*i,0*i,                0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}};
   unsigned long on_times[] = {200, 200, 200, 200, 200, 0};
   unsigned long delay_times[] = {40, 40, 40, 40, 0};
+  
+  run_response(wave_motors, wave_powers, on_times, delay_times);
+}
+
+
+// Responce 5 is for debugging
+void run_response5(int val) {
+  int i = val / 100;
+  // Try to run full response
+  int o = -1;
+  int m = 0;
+  int wave_motors[][16] = {{m,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {m,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {m,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {o,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}, 
+                           {o,o,o,o, o,o,o,o, o,o,o,o, o,o,o,o}};
+  unsigned long wave_powers[][16] = {{4090*i,0*i,0*i,0*i,             0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {4090*i,4090*i,4090*i,0*i,       0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {4090*i,255*i,4090*i,4090*i,    0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {4090*i,0*i,0*i,0*i,                0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}, 
+                                     {0*i,0*i,0*i,0*i,                0*i,0*i,0*i,0*i, 0,0,0,0, 0,0,0,0}};
+  unsigned long on_times[] = {1000, 1000, 2000, 2000, 0};
+  unsigned long delay_times[] = {500, 500, 500, 200, 0};
   
   run_response(wave_motors, wave_powers, on_times, delay_times);
 }
@@ -533,29 +556,53 @@ void eventHandler(){
 //}
 long tmpTime = 0;
 void loop(){
+    tmpTime = millis();
+    Serial.println(patternCounter);
+    // This is jump
     if(patternCounter == 0){
-      FJ_LightShow();
+      Serial.println("FJ");
+      run_response1(80);
+      tmpTime = millis();
+      while (millis() - tmpTime < 1000) {
+        FJ_LightShow();
+      }      
+      fill_solid(leds, NUM_LEDS, CRGB::Black);
+      FastLED.show();  
     }
-     else if(patternCounter == 1){
-      while (millis() - tmpTime < 5000) {
+    // This is small hit
+    else if(patternCounter == 1){
+      Serial.println("small hit");
+      run_response2(80); //motor response 
+      tmpTime = millis();
+      while (millis() - tmpTime < 1000) {
         hitSmall_LightShow();
       }
       fill_solid(leds, NUM_LEDS, CRGB::Black);
       FastLED.show();
-      tmpTime = millis();
-      run_response2(100); //motor response 
-     }
-     else if(patternCounter == 2){
-      //run_response3(100); //motor response  
-      hitLarge_LightShow();
-      //run_response3(100); //motor response 
-     }
-    else if(patternCounter == 3){
-      //run_response4(100); //motor response 
-      lowHealth_LightShow();
-      //run_response4(100); //motor response
+      
     }
-
+    // This is large hit
+    else if(patternCounter == 2){
+      Serial.println("large hit");
+      run_response3(80); //motor response 
+      tmpTime = millis();
+      while (millis() - tmpTime < 1000) {
+        hitLarge_LightShow();
+      } 
+      fill_solid(leds, NUM_LEDS, CRGB::Black);
+      FastLED.show();
+    }
+    // This is low health
+    else if(patternCounter == 3){
+      Serial.println("Low Health");
+      run_response1(80); //motor response
+      tmpTime = millis();
+      while (millis() - tmpTime < 1000) {
+        lowHealth_LightShow();
+      }      
+      fill_solid(leds, NUM_LEDS, CRGB::Black);
+      FastLED.show();
+    }
   EVERY_N_SECONDS(5){
     nextPattern();
   }
